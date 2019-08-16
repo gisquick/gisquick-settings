@@ -81,23 +81,16 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 
 func (s *Server) routes() {
 	s.router.Get("/ws/plugin/{user}", s.handlePluginWs())
-	s.router.Get("/ws/app", s.authMiddleware(s.handleAppWs()))
-	s.router.Get("/api/project/files/{user}/{directory}", s.handleProjectFiles())
+	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
+	s.router.Get("/api/project/files/{user}/{directory}", s.loginRequired(s.handleProjectFiles()))
 	s.router.Post("/api/project/upload", s.loginRequired(s.handleNewUpload()))
-	s.router.Post("/api/project/upload/{user}/{directory}", s.handleUpload())
+	s.router.Post("/api/project/upload/{user}/{directory}", s.loginRequired(s.handleUpload()))
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))
 
-	// Serve web app
-	// FileServer(s.router, "/static", http.Dir("web"))
-	// s.router.Get("/static/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	fileserver := http.StripPrefix("/static", http.FileServer(http.Dir("web")))
-	// 	fileserver.ServeHTTP(w, r)
-	// }))
 	// s.router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("web"))))
 	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
 	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))
-
 	s.router.Get("/*", s.authMiddleware(s.handleIndex()))
 	s.router.Get("/dev/", s.authMiddleware(s.handleDev()))
 }

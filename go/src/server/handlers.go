@@ -63,16 +63,7 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 
 func (s *Server) handleAppWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(contextKeyUser).(*User)
-		if !ok || user.IsGuest {
-			http.Error(w, "Authentication required", http.StatusUnauthorized)
-			return
-		}
-		// user := r.Context().Value(contextKeyUser).(*User)
-		// if user.IsGuest {
-		// 	http.Error(w, "Authentication required", http.StatusUnauthorized)
-		// 	return
-		// }
+		user := r.Context().Value(contextKeyUser).(*User)
 
 		fmt.Printf("Init WS for user: %v\n", user.Username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
@@ -184,11 +175,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 
 func (s *Server) handleNewUpload() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(contextKeyUser).(*User)
-		if !ok || user.IsGuest {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+		user := r.Context().Value(contextKeyUser).(*User)
 
 		ctype, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || ctype != "multipart/form-data" {
