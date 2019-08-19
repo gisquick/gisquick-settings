@@ -48,7 +48,7 @@
         </v-btn>
       </v-toolbar>
     </v-layout>
-    <v-layout class="column box abstract">
+    <v-layout class="column box abstract px-2 py-2">
       <h3>Description</h3>
       <v-textarea
         :disabled="!activeTopic"
@@ -58,7 +58,7 @@
         hide-details
       />
     </v-layout>
-    <v-layout class="column box layers">
+    <v-layout class="column box layers px-2 py-2">
       <h3>Layers</h3>
       <v-treeview
         v-if="activeTopic"
@@ -122,7 +122,6 @@ export default {
   display: grid;
   grid-template-columns: 1fr 2fr;
   grid-template-rows: auto auto 1fr;
-  grid-gap: 4px;
   // max-height: 100%;
   .v-toolbar {
     grid-row: 1 / 2;
@@ -131,6 +130,7 @@ export default {
   .list {
     grid-row: 2 / 4;
     grid-column: 1 / 2;
+    margin-right: 4px;
     ::v-deep .v-toolbar__content {
       padding: 0;
     }
@@ -138,7 +138,7 @@ export default {
   .abstract {
     grid-row: 2 / 3;
     grid-column: 2 / 3;
-    // min-height: 150px;
+    margin-bottom: 4px;
   }
   .layers {
     grid-row: 3 / 4;

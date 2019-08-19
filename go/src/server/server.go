@@ -84,7 +84,8 @@ func (s *Server) routes() {
 	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
 	s.router.Get("/api/project/files/{user}/{directory}", s.loginRequired(s.handleProjectFiles()))
 	s.router.Post("/api/project/upload", s.loginRequired(s.handleNewUpload()))
-	s.router.Post("/api/project/upload/{user}/{directory}", s.loginRequired(s.handleUpload()))
+	// TODO: add authentication for upload (plugin)
+	s.router.Post("/api/project/upload/{user}/{directory}", s.handleUpload())
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))
 

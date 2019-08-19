@@ -24,7 +24,18 @@
           disabled
           hide-details
         />
-        <div class="scroll-container mt-1">
+        <v-layout
+          v-if="loadingLocalFiles"
+          class="column grow align-center justify-center mx-4 my-4"
+        >
+          <div class="subtitle-1">Loading</div>
+          <v-progress-linear
+            indeterminate
+            rounded
+            height="6"
+          />
+        </v-layout>
+        <div v-else class="scroll-container mt-1">
           <v-treeview
             :items="localFilesTree"
             class="mt-2 px-2"
@@ -38,12 +49,16 @@
                 <v-icon v-else>mdi-file-document-outline</v-icon>
                 <span>{{ item.name }}</span>
                 <v-spacer/>
-                <v-progress-linear
-                  v-if="upload && upload[item.path]"
-                  :value="upload[item.path].progress"
-                  class="upload-bar"
-                />
-                <span class="filesize ml-4">{{ item.size | filesize }}</span>
+                <v-layout
+                  class="column filesize upload shrink ml-2"
+                  :class="{'progress-active': upload && upload[item.path]}"
+                >
+                  <span>{{ item.size | filesize }}</span>
+                  <v-progress-linear
+                    v-if="upload && upload[item.path]"
+                    :value="upload[item.path].progress"
+                  />
+                </v-layout>
               </v-layout>
             </template>
           </v-treeview>
@@ -63,7 +78,11 @@
         <v-toolbar-title>Server files</v-toolbar-title>
         <v-spacer/>
         <v-toolbar-items>
-          <v-btn icon @click="fetchServerFiles">
+          <v-btn
+            icon
+            :disabled="loadingServerFiles"
+            @click="fetchServerFiles"
+          >
             <v-icon>refresh</v-icon>
           </v-btn>
         </v-toolbar-items>
@@ -76,7 +95,18 @@
         disabled
         hide-details
       />
-      <div class="scroll-container mt-1">
+      <v-layout
+        v-if="loadingServerFiles"
+        class="column grow align-center justify-center mx-4 my-4"
+      >
+        <div class="subtitle-1">Loading</div>
+        <v-progress-linear
+          indeterminate
+          rounded
+          height="6"
+        />
+      </v-layout>
+      <div v-else class="scroll-container mt-1">
         <v-treeview
           :items="serverFilesTree"
           class="mt-4 px-2"
@@ -160,6 +190,8 @@ export default {
       localDirectory: '',
       localFiles: [],
       serverFiles: [],
+      loadingServerFiles: false,
+      loadingLocalFiles: false,
       upload: null
     }
   },
@@ -213,7 +245,6 @@ export default {
     }
   },
   created () {
-    console.log('Files:Created')
     this.$ws.bind('Files', this.onFilesMessage)
     this.$ws.bind('UploadProgress', this.onProgressMessage)
   },
@@ -223,6 +254,7 @@ export default {
   },
   methods: {
     onFilesMessage (e, msg) {
+      this.loadingLocalFiles = false
       const data = JSON.parse(msg)
       this.localFiles = data.files.sort(compareFilenames)
       this.localDirectory = data.directory
@@ -246,12 +278,19 @@ export default {
       }
     },
     fetchLocalFiles () {
+      this.loadingLocalFiles = true
       this.$ws.send('Files')
     },
     fetchServerFiles () {
-      this.$http.get(`/api/project/files/${this.projectPath}`).then(resp => {
-        this.serverFiles = resp.data.sort(compareFilenames)
-      })
+      this.loadingServerFiles = true
+      this.$http.get(`/api/project/files/${this.projectPath}`)
+        .then(resp => {
+          this.serverFiles = resp.data.sort(compareFilenames)
+          this.loadingServerFiles = false
+        })
+        .catch(err => {
+          this.loadingServerFiles = false
+        })
     },
     startUpload () {
       // const files = this.localFiles.filter(f => this.newFiles[f.path] || this.modifiedFiles[f.path])
@@ -281,6 +320,25 @@ export default {
 .filesize {
   width: 80px;
   text-align: right;
+
+  &.upload {
+    position: relative;
+    &.progress-active {
+      span {
+        transform: scale(0.85, 0.85);
+      }
+    }
+    span {
+      transform-origin: top right;
+      transition: 0.25s transform ease;
+    }
+    .v-progress-linear {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+  }
 }
 .page {
   display: grid;

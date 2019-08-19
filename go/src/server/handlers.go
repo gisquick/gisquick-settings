@@ -23,7 +23,7 @@ import (
 func (s *Server) handlePluginWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "user")
-		fmt.Printf("Plugin WS: %s", username)
+		fmt.Printf("Plugin WS: %s\n", username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,10 +50,8 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 				}
 			} else {
 				srcConn.WriteMessage(websocket.TextMessage, []byte("AppDisconnected"))
-				fmt.Println("Destination not connected!")
 			}
 		}
-		fmt.Println("Source websocket closed!")
 		s.pluginsWs.Set(username, nil)
 		if appWs := s.appsWs.Get(username); appWs != nil {
 			appWs.WriteMessage(websocket.TextMessage, []byte("PluginDisconnected"))
@@ -65,7 +63,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 
-		fmt.Printf("Init WS for user: %v\n", user.Username)
+		fmt.Printf("App WS: %s\n", user.Username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
