@@ -20,7 +20,7 @@
       </v-card>
     </v-dialog>
     <v-btn
-      small rounded text
+      rounded text
       class="mx-1"
       active-class="lime--text text--darken-2"
       :to="{name: 'layers'}"
@@ -29,7 +29,7 @@
       <span>Layers</span>
     </v-btn>
     <v-btn
-      small rounded text
+      rounded text
       class="mx-1"
       active-class="lime--text text--darken-2"
       :to="{name: 'topics'}"
@@ -38,7 +38,7 @@
       <span>Topics</span>
     </v-btn>
     <v-btn
-      small rounded text
+      rounded text
       class="mx-1"
       active-class="lime--text text--darken-2"
       :to="{name: 'files'}"
@@ -48,7 +48,7 @@
     </v-btn>
     <v-divider vertical class="mt-2"/>
     <v-btn
-      small rounded text
+      rounded text
       class="mx-1 deep-orange--text"
       @click="deleteDialog = true"
     >

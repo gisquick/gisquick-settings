@@ -1,5 +1,5 @@
 <template>
-  <div class="page py-2">
+  <div class="page">
     <v-toolbar dark dense class="shrink" color="lime darken-2">
       <v-toolbar-title>Topics</v-toolbar-title>
     </v-toolbar>

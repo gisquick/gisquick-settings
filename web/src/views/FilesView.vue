@@ -1,5 +1,5 @@
 <template>
-  <div class="page py-2">
+  <div class="page mb-1">
     <v-layout class="column box">
       <v-toolbar
         dark dense
@@ -124,7 +124,7 @@
         </v-treeview>
       </div>
     </v-layout>
-    <div class="toolbar">
+    <div class="toolbar mx-1 my-1">
       <v-spacer/>
       <v-btn rounded @click="startUpload">
         <v-icon class="mr-2">cloud_upload</v-icon>
@@ -278,8 +278,10 @@ export default {
       }
     },
     fetchLocalFiles () {
-      this.loadingLocalFiles = true
-      this.$ws.send('Files')
+      if (this.$ws.pluginConnected) {
+        this.loadingLocalFiles = true
+        this.$ws.send('Files')
+      }
     },
     fetchServerFiles () {
       this.loadingServerFiles = true

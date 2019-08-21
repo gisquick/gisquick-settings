@@ -1,5 +1,5 @@
 <template>
-  <div class="layers-view py-2">
+  <div class="layers-view mb-1">
     <v-toolbar dark dense class="shrink" color="lime darken-2">
       <v-toolbar-title>Base layers</v-toolbar-title>
     </v-toolbar>

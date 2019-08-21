@@ -1,22 +1,28 @@
 <template>
-  <v-app>
+  <v-app class="fill-height">
     <settings v-if="user"/>
     <login-dialog v-else @login="onLogin"/>
     <portal-target name="dialogs"/>
+    <notifications ref="notification"/>
   </v-app>
 </template>
 
 <script>
+import Vue from 'vue'
 import Settings from '@/Settings.vue'
 import LoginDialog from '@/components/LoginDialog.vue'
+import Notifications from '@/components/Notifications.vue'
 
 export default {
   name: 'app',
-  components: { LoginDialog, Settings },
+  components: { LoginDialog, Settings, Notifications },
   computed: {
     user () {
       return this.$root.user
     }
+  },
+  mounted () {
+    Vue.prototype.$notification = this.$refs.notification
   },
   methods: {
     onLogin (user) {

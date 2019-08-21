@@ -1,8 +1,8 @@
 <template>
-  <v-layout column>
+  <v-layout column fill-height>
     <v-store/>
 
-    <v-app-bar app dark dense>
+    <v-app-bar dark dense class="shrink">
       <img src="./assets/text_logo_dark.svg" class="logo"/>
       <router-view name="menu"/>
 
@@ -22,7 +22,7 @@
     </v-app-bar>
 
     <keep-alive>
-      <router-view v-if="user && $ws.connected" class="content"/>
+      <router-view v-if="user && $ws.connected" class="content fill-height my-2"/>
     </keep-alive>
   </v-layout>
 </template>
@@ -43,7 +43,6 @@ export default {
     }
   },
   created () {
-    console.log('Settings:Created')
     const protocol = location.protocol.endsWith('s:') ? 'wss' : 'ws'
     const socket = WebsocketMessenger(`${protocol}://${location.host}/ws/app`)
     Vue.util.defineReactive(socket, 'connected')
@@ -71,9 +70,9 @@ export default {
   margin-left: auto;
 }
 .content {
-  margin: 48px auto 8px auto;
+  margin: 0 auto;
   display: flex;
-  height: calc(100vh - 48px);
+  position: relative;
   overflow: auto;
 
   @media (max-width: 960px) {

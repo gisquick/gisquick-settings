@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div class="elevation-2">
     <v-data-table
-      class="grow mx-1 my-2 elevation-2"
       :headers="headers"
       :items="projects"
+      :loading="loading"
       disable-pagination
       hide-default-footer
     >
@@ -11,7 +11,7 @@
         <router-link :to="{path: item.project}">{{ value }}</router-link>
       </template>
       <template v-slot:item.url="{ value }">
-        <a :href="value">
+        <a :href="value" target="_blank">
           <v-icon>map</v-icon>
         </a>
       </template>
@@ -65,6 +65,11 @@ const Headers = [
 
 export default {
   name: 'Projects',
+  data () {
+    return {
+      loading: false
+    }
+  },
   computed: {
     projects () {
       return this.$root.projects
@@ -83,14 +88,29 @@ export default {
     // }
   },
   activated () {
-    this.$http.get('/projects.json').then(resp => {
-      this.$root.projects = resp.data.projects
-    })
+    this.fetchProjects()
+  },
+  methods: {
+    fetchProjects () {
+      this.loading = true
+      this.$http.get('/projects.json')
+        .then(resp => {
+          this.$root.projects = resp.data.projects
+          this.loading = false
+        })
+        .catch(err => {
+          this.loading = false
+          this.$notification.error('Failed to load projects!')
+        })
+    }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.v-data-table {
+  width: 100%;
+}
 a {
   .v-icon {
     color: inherit;
