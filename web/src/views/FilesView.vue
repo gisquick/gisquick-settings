@@ -142,7 +142,6 @@
 import Path from 'path'
 import { dirname, basename } from 'path'
 import _keyBy from 'lodash/keyBy'
-import TreeView from '@/components/TreeView.vue'
 
 function compareFilenames (a, b) {
   const depthA = a.path.split(Path.sep).length
@@ -179,7 +178,6 @@ function filesTree (files) {
 
 export default {
   name: 'Files',
-  components: { TreeView },
   props: {
     user: String,
     folder: String,
