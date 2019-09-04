@@ -1,6 +1,7 @@
 
 export default function WebsocketMessenger (url) {
   let listeners = []
+  const activeRequests = {}
   const socket = new WebSocket(url)
   let timer = null
   const ws = {
@@ -18,6 +19,16 @@ export default function WebsocketMessenger (url) {
     },
     sendJSON (name, data) {
       socket.send(name + ":" + JSON.stringify(data))
+    },
+    request (name, data = null) {
+      return new Promise((resolve, reject) => {
+        activeRequests[name] = { resolve, reject }
+        if (data) {
+          this.sendJSON(name, data)
+        } else {
+          this.send(name)
+        }
+      })
     },
     close () {
       if (timer !== null) {
@@ -37,17 +48,30 @@ export default function WebsocketMessenger (url) {
     
   }
   socket.onmessage = (e) => {
-    if (e.data === 'PluginDisconnected') {
-      ws.pluginConnected = false
-      return
-    }
-    if (e.data === 'PluginConnected' || e.data === 'PongPlugin') {
+    if (e.data === 'PongPlugin') {
       ws.pluginConnected = true
       return
     }
+    if (e.data === 'PluginConnected') {
+      ws.pluginConnected = true
+    }
+    if (e.data === 'PluginDisconnected') {
+      ws.pluginConnected = false
+    }
+
     const breakpoint = e.data.indexOf(':')
-    const type = e.data.substring(0, breakpoint)
-    const data = e.data.substring(breakpoint + 1)
+    let type, data
+    if (breakpoint !== -1) {
+      type = e.data.substring(0, breakpoint)
+      data = e.data.substring(breakpoint + 1)
+    } else {
+      type = e.data
+      data = ''
+    }
+    if (activeRequests[type]) {
+      activeRequests[type].resolve(data)
+      delete activeRequests[type]
+    }
     listeners.filter(l => l.type === type).forEach(l => {
       l.callback(e, data)
     })
