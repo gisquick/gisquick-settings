@@ -9,12 +9,18 @@
     >
     <v-btn
       rounded text
-      class="mx-1"
-      color="lime darken-2"
       @click="$refs.input.click()"
     >
-      <v-icon class="mr-2">cloud_upload</v-icon>
+      <v-icon class="mr-1">cloud_upload</v-icon>
       <span>Upload</span>
+    </v-btn>
+    <v-btn
+      rounded text
+      active-class="lime--text text--darken-2"
+      :to="{name: 'publish'}"
+    >
+      <v-icon class="mr-1">$vuetify.icons.qgis</v-icon>
+      <span>Publish</span>
     </v-btn>
     <v-progress-circular v-if="uploading" :value="progress" color="lime darken-2" size="28"/>
   </v-layout>
@@ -53,14 +59,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.v-btn--text {
-  &:before {
-    display: none;
-  }
-}
-.theme--dark .icon {
-  color: inherit;
-}
-</style>

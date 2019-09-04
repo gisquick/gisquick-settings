@@ -3,26 +3,43 @@
     <v-store/>
 
     <v-app-bar dark dense class="shrink">
-      <img src="./assets/text_logo_dark.svg" class="logo"/>
-      <router-view name="menu"/>
+      <div class="logo">
+        <img src="./assets/text_logo_dark.svg"/>
+      </div>
+      <!-- <router-link to="/" class="logo">
+        <img src="./assets/text_logo_dark.svg"/>
+      </router-link> -->
 
-      <img :src="pluginStatusImg" class="qgis-status mr-2"/>
-      <v-menu>
-        <template v-slot:activator="{ on: menu }">
-          <v-btn v-on="{ ...menu }" icon>
-            <v-icon>menu</v-icon>
-          </v-btn>
-        </template>
-        <v-list dense class="py-1">
-          <v-list-item @click="logout">
-            <v-list-item-title>Logout</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+      <portal-target name="menu" class="menu layout row">
+        <!-- <v-divider vertical class="my-2 mr-1"/> -->
+        <v-btn rounded text :to="{name: 'projects'}">
+          <v-icon class="mr-1">view_list</v-icon>
+          Projects
+        </v-btn>
+        <portal-target name="menu-breadcrumbs" multiple/>
+        <v-spacer/>
+        <portal-target name="menu-actions"/>
+      </portal-target>
+
+      <v-layout justify-end>
+        <img :src="pluginStatusImg" class="mr-2"/>
+        <v-menu>
+          <template v-slot:activator="{ on: menu }">
+            <v-btn v-on="{ ...menu }" icon>
+              <v-icon>menu</v-icon>
+            </v-btn>
+          </template>
+          <v-list dense class="py-1">
+            <v-list-item @click="logout">
+              <v-list-item-title>Logout</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </v-layout>
     </v-app-bar>
 
     <keep-alive>
-      <router-view v-if="user && $ws.connected" class="content fill-height my-2"/>
+      <router-view v-if="user && $ws.connected" class="fill-height my-2"/>
     </keep-alive>
   </v-layout>
 </template>
@@ -63,23 +80,52 @@ export default {
 
 <style lang="scss" scoped>
 .logo {
-  height: calc(100% - 20px);
-  box-sizing: content-box;
+  height: inherit;
+  img {
+    height: inherit;
+    padding: 10px 0;
+  }
 }
-.qgis-status {
-  margin-left: auto;
-}
-.content {
+::v-deep .content {
   margin: 0 auto;
   display: flex;
   position: relative;
   overflow: auto;
+  min-width: 960px;
 
   @media (max-width: 960px) {
+    min-width: 0;
     width: 100%;
   }
   @media (min-width: 1440px) {
     width: 1200px;
+  }
+}
+.v-app-bar {
+  ::v-deep .v-toolbar__content {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+  .menu {
+    flex: 1 0;
+    ::v-deep .v-btn--text {
+      padding: 0 0.5em
+    }
+    @media (max-width: 960px) {
+      min-width: 0;
+      width: auto;
+    }
+    @media (min-width: 1440px) {
+      width: 1200px;
+    }
+    ::v-deep {
+      .v-btn.v-btn--text {
+        &:before {
+          display: none;
+        }
+        // text-transform: none;
+      }
+    }
   }
 }
 </style>

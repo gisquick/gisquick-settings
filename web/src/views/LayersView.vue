@@ -1,9 +1,9 @@
 <template>
-  <div class="layers-view mb-1">
-    <v-toolbar dark dense class="shrink" color="lime darken-2">
+  <div class="layers-view">
+    <v-toolbar dark class="shrink" color="grey darken-2" height="42">
       <v-toolbar-title>Base layers</v-toolbar-title>
     </v-toolbar>
-    <v-toolbar dark dense class="shrink" color="lime darken-2">
+    <v-toolbar dark class="shrink" color="grey darken-2" height="42">
       <v-toolbar-title>Overlay layers</v-toolbar-title>
     </v-toolbar>
     <v-treeview
@@ -42,7 +42,7 @@
       @update:active="selectItem"
     >
       <template v-slot:prepend="{ item, open }">
-        <v-icon v-if="item.children">
+        <v-icon v-if="item.layers">
           {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
         </v-icon>
         <icon
@@ -57,7 +57,7 @@
             :name="geomIcons[item.geom_type]"
             class="mx-2"
           /> -->
-          <v-checkbox v-if="!item.children" color="primary" class="my-0" hide-details/>
+          <v-checkbox v-if="!item.layers" color="primary" class="my-0" hide-details/>
         </v-layout>
       </template>
     </v-treeview>

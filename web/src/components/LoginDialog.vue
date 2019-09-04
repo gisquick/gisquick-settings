@@ -22,16 +22,20 @@
           <v-form ref="form" v-model="valid" :lazy-validation="true">
             <v-text-field
               label="Username"
+              placeholder=" "
               v-model="username"
               @keyup.enter="login"
+              color="primary"
             />
             <v-text-field
               label="Password"
+              placeholder=" "
               v-model="password"
-              :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-              :append-icon-cb="() => (passwordVisible = !passwordVisible)"
+              :append-icon="passwordVisible ? 'visibility' : 'visibility_off'"
               :type="passwordVisible ? 'text' : 'password'"
+              @click:append="passwordVisible = !passwordVisible"
               @keyup.enter="login"
+              color="primary"
             />
             <v-btn light color="grey lighten-3" @click="login">
               Login

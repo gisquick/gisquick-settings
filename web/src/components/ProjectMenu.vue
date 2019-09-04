@@ -22,7 +22,7 @@
     <v-btn
       rounded text
       class="mx-1"
-      active-class="lime--text text--darken-2"
+      active-class="orange--text"
       :to="{name: 'layers'}"
     >
       <v-icon class="mr-2">layers</v-icon>
@@ -31,7 +31,7 @@
     <v-btn
       rounded text
       class="mx-1"
-      active-class="lime--text text--darken-2"
+      active-class="orange--text"
       :to="{name: 'topics'}"
     >
       <icon name="topics" class="mr-2"/>
@@ -40,7 +40,7 @@
     <v-btn
       rounded text
       class="mx-1"
-      active-class="lime--text text--darken-2"
+      active-class="orange--text"
       :to="{name: 'files'}"
     >
       <v-icon class="mr-2">cloud_upload</v-icon>
@@ -54,16 +54,6 @@
     >
       <v-icon class="mr-2">delete_forever</v-icon>
       <span>Delete</span>
-    </v-btn>
-    <v-spacer/>
-    <v-btn
-      rounded
-      color="transparent"
-      class="mx-2"
-      :to="{name: 'projects'}"
-    >
-      <v-icon class="mr-2 r-90">subdirectory_arrow_left</v-icon>
-      <span>Projects</span>
     </v-btn>
   </v-layout>
 </template>

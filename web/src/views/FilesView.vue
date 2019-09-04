@@ -2,10 +2,11 @@
   <div class="page mb-1">
     <v-layout class="column box">
       <v-toolbar
-        dark dense
+        dark
         elevation="2"
         class="shrink"
-        color="lime darken-2"
+        color="grey darken-2"
+        height="42"
       >
         <v-toolbar-title>Local files</v-toolbar-title>
         <v-spacer/>
@@ -70,10 +71,11 @@
     <!-- Server -->
     <v-layout class="column box">
       <v-toolbar
-        dark dense
+        dark
         elevation="2"
         class="shrink"
-        color="lime darken-2"
+        color="grey darken-2"
+        height="42"
       >
         <v-toolbar-title>Server files</v-toolbar-title>
         <v-spacer/>

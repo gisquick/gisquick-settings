@@ -1,5 +1,8 @@
 <template>
-  <div class="elevation-2">
+  <div class="elevation-2 content">
+    <portal to="menu-actions" v-if="pageVisible">
+      <projects-menu/>
+    </portal>
     <v-data-table
       :headers="headers"
       :items="projects"
@@ -28,6 +31,9 @@
 </template>
 
 <script>
+import Page from '@/mixins/Page'
+import ProjectsMenu from '@/components/ProjectsMenu'
+
 const Headers = [
   {
     text: 'Project',
@@ -65,6 +71,8 @@ const Headers = [
 
 export default {
   name: 'Projects',
+  mixins: [ Page ],
+  components: { ProjectsMenu },
   data () {
     return {
       loading: false

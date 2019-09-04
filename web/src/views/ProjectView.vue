@@ -1,12 +1,29 @@
 <template>
-  <keep-alive>
-    <router-view v-if="config" :config="config"/>
-  </keep-alive>
+  <div class="content">
+    <portal to="menu-breadcrumbs" v-if="pageVisible">
+      <v-icon>keyboard_arrow_right</v-icon>
+      <v-btn text color="orange">
+        <v-icon class="mr-1">map</v-icon>
+        {{ config && config.root_title }}
+      </v-btn>
+    </portal>
+    <portal to="menu-actions" v-if="pageVisible">
+      <project-menu/>
+    </portal>
+    <keep-alive>
+      <router-view v-if="config" :config="config"/>
+    </keep-alive>
+  </div>
 </template>
 
 <script>
+import Page from '@/mixins/Page'
+import ProjectMenu from '@/components/ProjectMenu'
+
 export default {
   name: 'Project',
+  mixins: [ Page ],
+  components: { ProjectMenu },
   props: {
     user: String,
     folder: String,
@@ -51,3 +68,9 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.content > * {
+  width: 100%;
+}
+</style>

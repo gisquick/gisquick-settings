@@ -1,6 +1,10 @@
 <template>
-  <div class="page">
-    <v-toolbar dark dense class="shrink" color="lime darken-2">
+  <div class="topics">
+    <v-toolbar
+      dark
+      color="grey darken-2"
+      height="42"
+    >
       <v-toolbar-title>Topics</v-toolbar-title>
     </v-toolbar>
     <v-layout class="column box list">
@@ -118,7 +122,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page {
+.topics {
   display: grid;
   grid-template-columns: 1fr 2fr;
   grid-template-rows: auto auto 1fr;

@@ -2,8 +2,6 @@ import VueRouter from 'vue-router'
 import FilesView from '@/views/FilesView'
 import LayersView from '@/views/LayersView'
 import TopicsView from '@/views/TopicsView'
-import ProjectMenu from '@/components/ProjectMenu'
-import ProjectsMenu from '@/components/ProjectsMenu'
 import ProjectView from '@/views/ProjectView'
 import ProjectsView from '@/views/ProjectsView'
 
@@ -16,23 +14,14 @@ export default new VueRouter({
     {
       path: '/',
       name: 'projects',
-      components: {
-        default: ProjectsView,
-        menu: ProjectsMenu
-      }
+      component: ProjectsView
     },
     {
       path: '/:user/:folder/:projectName/',
       name: 'project',
       redirect: { name: 'layers' },
-      props: {
-        default: true,
-        menu: true
-      },
-      components: {
-        default: ProjectView,
-        menu: ProjectMenu
-      },
+      props: true,
+      component: ProjectView,
       children: [
         {
           path: '/',
