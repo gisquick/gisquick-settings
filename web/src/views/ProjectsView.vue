@@ -1,7 +1,7 @@
 <template>
   <div class="elevation-2 content">
     <portal to="menu-actions" v-if="pageVisible">
-      <projects-menu/>
+      <projects-menu @upload-finished="fetchProjects"/>
     </portal>
     <v-data-table
       :headers="headers"

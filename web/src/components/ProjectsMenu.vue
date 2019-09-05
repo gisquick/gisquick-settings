@@ -22,7 +22,12 @@
       <v-icon class="mr-1">$vuetify.icons.qgis</v-icon>
       <span>Publish</span>
     </v-btn>
-    <v-progress-circular v-if="uploading" :value="progress" color="lime darken-2" size="28"/>
+    <v-progress-circular
+      v-if="uploading"
+      :value="progress"
+      color="lime darken-2"
+      size="28"
+    />
   </v-layout>
 </template>
 
@@ -51,7 +56,7 @@ export default {
         }
       }).then(resp => {
         this.uploading = false
-        this.$route.matched[0].instances.default.fetchProjects()
+        this.$emit('upload-finished')
       }).catch(err => {
         this.uploading = false
       })
