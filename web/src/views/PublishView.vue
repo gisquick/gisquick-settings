@@ -46,18 +46,10 @@
           color="lime darken-2"
           icon="$vuetify.icons.qgis"
           :disabled="!$ws.pluginConnected"
-        />
-        <timeline-secondary-link
-          label="General"
-          :to="{name: 'qgis-project', params: {page: 'info'}}"
-          color="lime darken-2"
-          active-class="lime--text text--darken-2"
-        />
-        <timeline-secondary-link
-          label="Layers"
-          :to="{name: 'qgis-project', params: {page: 'layers'}}"
-          color="lime darken-2"
-          active-class="lime--text text--darken-2"
+          :links="[
+            {text: 'General', page: 'info'},
+            {text: 'Layers', page: 'layers'}
+          ]"
         />
 
         <!-- Step 2 -->
@@ -94,18 +86,10 @@
           color="primary"
           icon="settings"
           :disabled="!serverActionsEnabled"
-        />
-        <timeline-secondary-link
-          label="Layers"
-          :to="{name: 'publish-config', params: {page: 'layers'}}"
-          color="primary"
-          active-class="primary--text"
-        />
-        <timeline-secondary-link
-          label="Topics"
-          :to="{name: 'publish-config', params: {page: 'topics'}}"
-          color="primary"
-          active-class="primary--text"
+          :links="[
+            {text: 'Layers', page: 'layers'},
+            {text: 'Topics', page: 'topics'}
+          ]"
         />
         <!-- Step 4 -->
         <timeline-primary-link
@@ -146,7 +130,6 @@ import { basename, extname } from 'path'
 import Page from '@/mixins/Page'
 import PluginDisconnected from '@/components/PluginDisconnected'
 import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
-import TimelineSecondaryLink from '@/components/TimelineSecondaryLink'
 
 function layersList (items) {
   const list = []
@@ -163,7 +146,7 @@ function layersList (items) {
 export default {
   name: 'PublishView',
   mixins: [ Page ],
-  components: { PluginDisconnected, TimelinePrimaryLink, TimelineSecondaryLink },
+  components: { PluginDisconnected, TimelinePrimaryLink },
   data () {
     return {
       projectInfo: null,
@@ -271,12 +254,11 @@ export default {
         ],
         base_layers: []
       })
-      console.log(meta)
       const projFile = this.projectInfo.file
       const metafile = basename(projFile).replace(extname(projFile), ".meta")
       this.$http.post(`/api/project/meta/${this.projectPath}/${metafile}`, meta)
         .then(() => {
-          console.log("Success!")
+          this.$notification.show('Published!')
         })
     }
   }

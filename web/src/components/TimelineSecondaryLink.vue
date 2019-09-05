@@ -1,17 +1,17 @@
 <template>
   <v-timeline-item
-    class="pb-0 my-3"
-    :color="dotColor"
+    class="pb-0"
+    :color="currentColor"
     small
   >
-    <router-link
+    <v-btn
       :to="to"
-      :active-class="activeClass"
-      class="link"
-      tag="span"
+      :color="currentColor"
+      rounded
+      text
     >
       <slot>{{ label }}</slot>
-    </router-link>
+    </v-btn>
   </v-timeline-item>
 </template>
 
@@ -20,8 +20,7 @@ export default {
   props: {
     label: String,
     to: Object,
-    color: String,
-    activeClass: String
+    color: String
   },
   computed: {
     linkPath () {
@@ -30,7 +29,7 @@ export default {
     isActive () {
       return this.$route.fullPath === this.linkPath
     },
-    dotColor () {
+    currentColor () {
       return this.isActive ? this.color : 'grey'
     }
   }
@@ -38,9 +37,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.link {
-  margin-left: 20px;
-  color: #555;
-  cursor: pointer;
+.v-timeline-item {
+  height: 2.5em;
+  ::v-deep .v-timeline-item__body {
+    display: flex;
+    align-items: center;
+  }
+}
+.v-btn {
+  &:before {
+    display: none;
+  }
+  text-transform: none;
 }
 </style>
