@@ -98,9 +98,14 @@ func (s *Server) handleProjectFiles() http.HandlerFunc {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
 
-		files, err := fs.ListDir(filepath.Join(projectsDir, username, directory))
+		projectDir := filepath.Join(projectsDir, username, directory)
+		files, err := fs.ListDir(projectDir)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if os.IsNotExist(err) {
+				http.Error(w, "Project not found", http.StatusNotFound)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 		s.jsonResponse(w, files)
@@ -274,6 +279,39 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 			http.Error(w, "FileServer Error", http.StatusInternalServerError)
 			return
 		}
+		w.Write([]byte(""))
+	}
+}
+
+func (s *Server) handleSaveConfig() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(contextKeyUser).(*User)
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		if user.Username != username {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", "project.json")
+		defer r.Body.Close()
+		fs.SaveToFile(r.Body, dest)
+		w.Write([]byte(""))
+	}
+}
+
+func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(contextKeyUser).(*User)
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		filename := chi.URLParam(r, "name")
+		if user.Username != username {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, filename)
+		defer r.Body.Close()
+		fs.SaveToFile(r.Body, dest)
 		w.Write([]byte(""))
 	}
 }

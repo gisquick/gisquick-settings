@@ -12,10 +12,10 @@ import (
 
 // File export
 type File struct {
-	Path     string    `json:"path"`
-	Checksum string    `json:"checksum"`
-	Size     int64     `json:"size"`
-	Mtime    time.Time `json:"mtime"`
+	Path  string    `json:"path"`
+	Hash  string    `json:"hash"`
+	Size  int64     `json:"size"`
+	Mtime time.Time `json:"mtime"`
 }
 
 // Checksum export
@@ -42,14 +42,14 @@ func ListDir(root string) (*[]File, error) {
 			return err
 		}
 		if !info.IsDir() {
-			checksum, err := Checksum(path)
+			hash, err := Checksum(path)
 			if err != nil {
 				return err
 			}
-			// checksum := ""
+			// hash := ""
 			relPath := path[len(root)+1:]
-			if !strings.HasPrefix(relPath, ".gisquick") {
-				files = append(files, File{relPath, checksum, info.Size(), info.ModTime()})
+			if !strings.HasPrefix(relPath, ".gisquick") && !strings.HasSuffix(relPath, "~") {
+				files = append(files, File{relPath, hash, info.Size(), info.ModTime()})
 			}
 		}
 		return nil

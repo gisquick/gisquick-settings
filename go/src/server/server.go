@@ -88,7 +88,8 @@ func (s *Server) routes() {
 	s.router.Post("/api/project/upload/{user}/{directory}", s.handleUpload())
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))
-
+	s.router.Post("/api/project/config/{user}/{directory}", s.loginRequired(s.handleSaveConfig()))
+	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	// s.router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("web"))))
 	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
 	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))
