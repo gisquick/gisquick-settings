@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -210,10 +211,35 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			return
 		}
 		archiveReader, err := zip.OpenReader(tmpfile.Name())
+
 		if err != nil {
 			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}
+
+		// Check archive structure - all files in one root directory, with QGIS project
+		rootFile := archiveReader.File[0]
+		if !rootFile.FileInfo().IsDir() {
+			http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
+			return
+		}
+		qgisExtRegex := regexp.MustCompile("(?i).*\\.(qgs|qgz)$")
+		hasQgisProject := false
+		for _, f := range archiveReader.File[1:] {
+			if !strings.HasPrefix(f.Name, rootFile.Name) {
+				http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
+				return
+			}
+			if qgisExtRegex.Match([]byte(f.Name)) {
+				hasQgisProject = true
+			}
+		}
+		if !hasQgisProject {
+			http.Error(w, "Invalid archive: missing QGIS project", http.StatusBadRequest)
+			return
+		}
+
+		// Extract files
 		for _, f := range archiveReader.File {
 			dest := filepath.Join(s.config.ProjectsDirectory, user.Username, f.Name)
 			if !f.FileInfo().IsDir() {

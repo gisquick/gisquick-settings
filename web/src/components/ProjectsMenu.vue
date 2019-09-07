@@ -57,8 +57,11 @@ export default {
       }).then(resp => {
         this.uploading = false
         this.$emit('upload-finished')
+        this.$notification.show('Project uploaded')
       }).catch(err => {
         this.uploading = false
+        const msg = (err && err.response && err.response.data) || 'Error'
+        this.$notification.error(msg)
       })
     }
   }
