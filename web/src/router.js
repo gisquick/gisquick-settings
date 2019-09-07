@@ -4,7 +4,7 @@ import LayersView from '@/views/LayersView'
 import TopicsView from '@/views/TopicsView'
 import ProjectView from '@/views/ProjectView'
 import ProjectsView from '@/views/ProjectsView'
-import PublishView from '@/views/PublishView'
+import PublishWizardView from '@/views/PublishWizardView'
 import QgisProject from '@/views/publish/QgisProject'
 import Upload from '@/views/publish/Upload'
 import Config from '@/views/publish/Config'
@@ -23,23 +23,29 @@ export default new VueRouter({
     {
       path: '/publish',
       name: 'publish',
-      component: PublishView,
+      component: PublishWizardView,
       redirect: { name: 'qgis-project' },
       children: [
         {
           path: 'qgis/:page?',
           name: 'qgis-project',
-          component: QgisProject
+          component: QgisProject,
+          meta: { requiresPlugin: true }
         },
         {
           path: 'upload',
           name: 'publish-upload',
-          component: Upload
+          component: Upload,
+          meta: { requiresPlugin: true }
         },
         {
           path: 'config/:page?',
           name: 'publish-config',
           component: Config
+        },
+        {
+          path: 'final',
+          name: 'publish-final'
         }
       ]
     },

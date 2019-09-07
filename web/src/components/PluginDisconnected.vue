@@ -1,4 +1,4 @@
-<template>
+<template functional>
   <v-layout column align-center justify-center>
     <h4 class="my-4">QGIS plugin is not connected!</h4>
     <img src="@/assets/qgis_disconnected.svg" class="my-2">
@@ -7,7 +7,7 @@
 
 <script>
 export default {
-
+  functional: true
 }
 </script>
 

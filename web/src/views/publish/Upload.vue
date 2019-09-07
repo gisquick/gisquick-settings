@@ -103,8 +103,8 @@ export default {
         })
     },
     uploadFiles () {
-      const newFiles = this.$refs.filesBrowser.newFiles
-      const files = this.src.files.filter(f => newFiles[f.path])
+      const { newFiles, modifiedFiles } = this.$refs.filesBrowser
+      const files = this.src.files.filter(f => newFiles[f.path] || modifiedFiles[f.path])
       const upload = {}
       files.forEach(f => {
         upload[f.path] = {
@@ -133,7 +133,6 @@ export default {
         // this.$ws.sendJSON('SaveProjectConfig', { project: this.projectPath, config: this.config })
         this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
           .then(() => {
-            console.log("Success!")
             this.fetchServerFiles()
             this.store.projectConfig = {
               ...this.config,

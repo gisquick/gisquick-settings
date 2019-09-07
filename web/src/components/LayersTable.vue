@@ -10,15 +10,31 @@ const DefaultValue = {
   }
 }
 
+function layerIcon (layer) {
+  if (layer.type === 'vector') {
+    return {
+      POINT: 'point',
+      LINE: 'line',
+      POLYGON: 'polygon'
+    }[layer.geom_type]
+  } else {
+    return 'raster'
+  }
+}
+
 export default {
+  name: 'LayersTable',
   components: { VIcon, VLayout },
   props: {
+    label: String,
     items: Array,
     headers: Array,
     opened: {
       type: Array,
       default: () => []
-    }
+    },
+    selected: String,
+    selectedClass: String
   },
   methods: {
     toggleGroup (item) {
@@ -26,9 +42,23 @@ export default {
       this.$emit('update:opened', _xor(this.opened, [item.name]))
     },
     renderLeaf (h, item, depth) {
-      const cmp = this.$scopedSlots.leaf({ item, depth })
-      cmp[0].data.style = {
-        paddingLeft: `${28 * depth}px`,
+      let cmp
+      const indentStyle = {
+        paddingLeft: `${28 * depth}px`
+      }
+      if (this.$scopedSlots.leaf) {
+        cmp = this.$scopedSlots.leaf({ item, depth })
+        cmp[0].data.style = indentStyle
+      } else {
+        cmp = (
+          <v-layout
+            shrink align-center
+            style={indentStyle} onClick={() => this.$emit('click:row', item)}
+          >
+            <icon name={layerIcon(item)} class="grey--text mr-2"/>
+            <span>{item.name}</span>
+          </v-layout>
+        )
       }
 
       const values = this.headers.map(header => {
@@ -37,7 +67,7 @@ export default {
         return <td>{comp}</td>
       })
       return (
-        <tr>
+        <tr class={{[this.selectedClass]: item.name === this.selected}}>
           <td>{cmp}</td>
           {values}
         </tr>
@@ -75,7 +105,7 @@ export default {
     const { items } = this.$props
     const children = items.map(item => item.layers ? this.renderGroup(h, item, 0) : this.renderLeaf(h, item, 0))
     const headers = [
-      <th class="header text-left">Layer</th>,
+      <th class="header text-left">{this.label}</th>,
       ...this.headers.map(header => <th class={`header text-${header.align || 'center'}`} width="1">{header.text}</th>)
     ]
     return (

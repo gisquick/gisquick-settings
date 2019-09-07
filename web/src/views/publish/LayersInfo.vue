@@ -39,6 +39,7 @@
     </template>
   </tree-table> -->
   <layers-table
+    label="Layer"
     :items="layers"
     :headers="headers"
     :opened.sync="opened"

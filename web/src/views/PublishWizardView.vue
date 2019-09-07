@@ -9,8 +9,8 @@
     </portal>
 
     <!-- Timeline -->
-    <v-layout class="column left-panel">
-      <v-timeline dense class="mr-4 py-0">
+    <v-layout class="column left-panel mr-1">
+      <v-timeline dense class="mr-2 py-0">
         <v-timeline-item
           class="flat grey--text pb-2"
           color="transparent"
@@ -28,16 +28,17 @@
           <v-divider class="mr"/>
         </v-layout> -->
 
-        <v-timeline-item
-          v-if="!$ws.pluginConnected"
-          icon-color="deep-orange"
-          color="transparent"
-          icon="close"
-          class="pb-2"
-          small
-        >
-          <!-- <small class="deep-orange--text">QGIS plugin not connected!</small> -->
-        </v-timeline-item>
+        <v-expand-transition>
+          <div v-if="!$ws.pluginConnected">
+            <v-timeline-item
+              icon-color="deep-orange"
+              color="transparent"
+              icon="close"
+              class="pb-1"
+              small
+            />
+          </div>
+        </v-expand-transition>
 
         <!-- Step 1 -->
         <timeline-primary-link
@@ -87,6 +88,7 @@
           icon="settings"
           :disabled="!serverActionsEnabled"
           :links="[
+            {text: 'Project', page: 'project'},
             {text: 'Layers', page: 'layers'},
             {text: 'Topics', page: 'topics'}
           ]"
@@ -117,8 +119,13 @@
 
     <div class="content main">
       <keep-alive>
-        <router-view v-if="$ws.pluginConnected" class="scroll-area"/>
-        <plugin-disconnected v-else class="grow"/>
+        <plugin-disconnected
+          v-if="$route.meta.requiresPlugin && !$ws.pluginConnected"
+          class="grow"
+        />
+        <router-view v-else class="scroll-area"/>
+        <!-- <router-view v-if="$ws.pluginConnected" class="scroll-area"/>
+        <plugin-disconnected v-else class="grow"/> -->
       </keep-alive>
     </div>
   </div>
@@ -130,6 +137,17 @@ import { basename, extname } from 'path'
 import Page from '@/mixins/Page'
 import PluginDisconnected from '@/components/PluginDisconnected'
 import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
+
+/* Converts array of map scales to tile resolutions. */
+function scalesToResolutions(scales, units, dpi = 96) {
+  const factor = {
+    feet: 12.0,
+    meters: 39.37,
+    miles: 63360.0,
+    degrees: 4374754.0
+  }
+  return scales.map(scale => parseInt(scale) / (dpi * factor[units]))
+}
 
 function layersList (items) {
   const list = []
@@ -143,8 +161,26 @@ function layersList (items) {
   return list
 }
 
+function filterLayers (items, test) {
+  const list = []
+  items.forEach(item => {
+    if (item.layers) {
+      const children = filterLayers(item.layers, test)
+      if (children.length) {
+        list.push({
+          ...item,
+          layers: children
+        })
+      }
+    } else if (test(item)) {
+      list.push(item)
+    }
+  })
+  return list
+}
+
 export default {
-  name: 'PublishView',
+  name: 'PublishWizardView',
   mixins: [ Page ],
   components: { PluginDisconnected, TimelinePrimaryLink },
   data () {
@@ -174,6 +210,9 @@ export default {
       //   return this.serverFiles.some(f => f.path === projectFile)
       // }
       // return false
+    },
+    overlays () {
+      return this.projectConfig && filterLayers(this.projectConfig.layers, l => l.publish)
     }
   },
   created () {
@@ -205,55 +244,36 @@ export default {
           const config = JSON.parse(resp)
           layersList(config.layers).forEach(l => {
             l.publish = true
+            l.hidden = false
+          })
+          Object.assign(config, {
+            base_layers: [],
+            authentication: 'all',
+            use_mapcache: false,
+            selection_color: "#ffff00ff"
           })
           this.projectInfo = config
         })
     },
     publish () {
-      const meta = JSON.parse(JSON.stringify(_omit(this.projectConfig, ['file', 'directory'])))
-      layersList(meta.layers).forEach(l => {
-        l.visible = true
-        l.queryable = false
-        l.hidden = false
+      const meta = _omit(this.projectConfig, ['file', 'directory'])
+      const overlays = JSON.parse(JSON.stringify(this.overlays))
+      layersList(overlays).forEach(l => {
+        l.queryable = l.wfs
         delete l.wfs
         delete l.source
         delete l.publish
       })
-      meta.overlays = meta.layers
+      meta.overlays = overlays
       delete meta.layers
       
       Object.assign(meta, {
-        title: 'Test',
-        use_mapcache: false,
-        authentication: 'all',
         publish_date: new Date().toUTCString(),
         publish_date_unix: new Date().getTime()/1000|0,
-        selection_color: "#ffff00ff",
-        gislab_user: this.user.username,
-        tile_resolutions: [
-          52.916772500211664,
-          26.458386250105832,
-          13.229193125052916,
-          6.614596562526458,
-          2.645838625010583,
-          1.3229193125052916,
-          0.6614596562526458,
-          0.2645838625010583,
-          0.13229193125052915
-        ],
-        scales: [
-          200000,
-          100000,
-          50000,
-          25000,
-          10000,
-          5000,
-          2500,
-          1000,
-          500
-        ],
-        base_layers: []
+        gislab_user: this.user.username
       })
+      meta.tile_resolutions = scalesToResolutions(meta.scales, meta.units)
+      console.log(meta)
       const projFile = this.projectInfo.file
       const metafile = basename(projFile).replace(extname(projFile), ".meta")
       this.$http.post(`/api/project/meta/${this.projectPath}/${metafile}`, meta)
@@ -290,6 +310,7 @@ export default {
 }
 .v-timeline {
   position: relative;
+  max-width: 300px;
   &:before {
     top: 16px;
     bottom: 16px;
@@ -306,15 +327,6 @@ export default {
     color: #bbb;
     width: 100%;
     height: 32px;
-  }
-  .v-timeline-item {
-    min-width: 300px;
-    max-width: 300px;
-    // ::v-deep .v-timeline-item__inner-dot {
-    //   width: auto;
-    //   max-width: none;
-    //   min-width: 100px;
-    // }
   }
   .v-divider {
     border-style: dashed;

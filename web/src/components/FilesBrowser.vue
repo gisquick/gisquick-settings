@@ -103,6 +103,7 @@
       </v-layout>
       <div v-else class="scroll-container mt-1">
         <v-treeview
+          v-if="destLoading || destFiles.length > 0"
           :items="serverFilesTree"
           class="mt-2 px-2"
           dense
@@ -117,6 +118,9 @@
             <span class="ml-4">{{ item.size | filesize }}</span>
           </template>
         </v-treeview>
+        <v-layout v-else fill-height align-center justify-center>
+          <span class="grey--text">Empty</span>
+        </v-layout>
       </div>
     </v-layout>
   </v-layout>
@@ -202,9 +206,9 @@ export default {
       const styles = {}
       this.localFiles.forEach(f => {
         if (this.newFiles[f.path]) {
-          var color = 'green'
+          var color = '#689F38'
         } else if (this.modifiedFiles[f.path]) {
-          color = 'orange'
+          color = '#FFA000'
         } else {
           color = '#444'
         }

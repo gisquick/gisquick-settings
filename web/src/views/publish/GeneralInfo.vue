@@ -1,8 +1,8 @@
 <template>
   <v-layout column>
-    <h4>Project CRS</h4>
+    <h4>Map settings</h4>
     <v-text-field
-      label="Code"
+      label="Projection"
       :value="config.projection.code"
       class="shrink mx-4"
       disabled
@@ -10,6 +10,12 @@
     <v-text-field
       label="Units"
       :value="config.units"
+      class="shrink mx-4"
+      disabled
+    />
+    <v-text-field
+      label="Predefined scales"
+      :value="scalesText"
       class="shrink mx-4"
       disabled
     />
@@ -22,6 +28,13 @@
         {{ template.name }}
       </v-list-item>
     </v-list>
+    <h4>Server options</h4>
+    <v-checkbox
+      label="Add geometry in feature response"
+      class="mx-4"
+      :input-value="config.server.wms_add_geometry"
+      disabled
+    />
   </v-layout>
 </template>
 
@@ -30,6 +43,11 @@ export default {
   name: 'GeneralInfo',
   props: {
     config: Object
+  },
+  computed: {
+    scalesText () {
+      return this.config.scales.map(s => `1: ${s}`).join(', ')
+    }
   }
 }
 </script>
