@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     linkPath () {
-      return this.$router.resolve(this.to).href
+      return this.$router.resolve(this.to).route.fullPath
     },
     isActive () {
       return this.$route.fullPath === this.linkPath

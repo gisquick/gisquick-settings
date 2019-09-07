@@ -64,7 +64,7 @@ export default {
   },
   computed: {
     linkPath () {
-      return this.to && this.$router.resolve(this.to).href
+      return this.to && this.$router.resolve(this.to).route.fullPath
     },
     isActive () {
       return this.$route.fullPath === this.linkPath || this.$route.fullPath.startsWith(this.linkPath + '/')
