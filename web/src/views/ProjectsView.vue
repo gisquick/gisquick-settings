@@ -43,7 +43,7 @@ const Headers = [
   }, {
     text: 'Map',
     align: 'left',
-    sortable: true,
+    sortable: false,
     value: 'url',
     width: 75
   }, {

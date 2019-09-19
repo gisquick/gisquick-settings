@@ -8,7 +8,8 @@
       </v-btn>
     </portal>
     <portal to="menu-actions" v-if="pageVisible">
-      <project-menu/>
+      <!-- <project-menu :user="user" :folder="folder"/> -->
+      <project-menu v-bind="$route.params"/>
     </portal>
     <keep-alive>
       <router-view v-if="config" :config="config"/>

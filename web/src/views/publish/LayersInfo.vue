@@ -60,7 +60,7 @@
         <span>{{ item.name }}</span>
       </v-layout>
     </template>
-    <template v-slot:leaf.publish="{ item }">
+    <!-- <template v-slot:leaf.publish="{ item }">
       <v-checkbox
         v-model="item.publish"
         color="grey darken-1"
@@ -68,15 +68,18 @@
         :ripple="false"
         hide-details
       />
-    </template>
+    </template> -->
     <template v-slot:leaf.wfs="{ item }">
       <v-icon v-if="item.wfs">check</v-icon>
       <v-icon v-else>remove</v-icon>
     </template>
     <template v-slot:leaf.source="{ item }">
-      <v-layout v-if="item.source" align-center>
-        <v-icon size="20" class="mr-1">mdi-file-document-outline</v-icon>
-        <span>{{ item.source }}</span>
+      <v-layout
+        v-if="item.source"
+        class="align-center source"
+      >
+        <v-icon size="20" class="mr-1" v-text="sourceInfo[item.name].icon"/>
+        <span>{{ sourceInfo[item.name].text }}</span>
       </v-layout>
     </template>
   </layers-table>
@@ -86,23 +89,15 @@
 // import TreeView from '@/components/TreeView'
 // import TreeTable from '@/components/TreeTable'
 import LayersTable from '@/components/LayersTable'
-
-function layersGroups (items) {
-  const list = []
-  items.forEach(item => {
-    if (item.layers) {
-      list.push(item, ...layersGroups(item.layers))
-    }
-  })
-  return list
-}
+import { layersList, layersGroups } from '@/utils'
+import path from 'path'
 
 export default {
   name: 'Layers',
   // components: { TreeView, TreeTable, LayersTable },
   components: { LayersTable },
   props: {
-    layers: Array
+    config: Object
   },
   data () {
     return {
@@ -110,12 +105,15 @@ export default {
     }
   },
   computed: {
+    layers () {
+      return this.config.layers
+    },
     headers () {
       return [
-        {
-          text: 'Publish',
-          value: 'publish',
-        },
+        // {
+        //   text: 'Publish',
+        //   value: 'publish',
+        // },
         {
           text: 'WFS',
           value: 'wfs'
@@ -143,6 +141,33 @@ export default {
         LINE: 'line',
         POLYGON: 'polygon'
       }
+    },
+    sourceIcons () {
+      return {
+        file: 'mdi-file-document-outline',
+        postgresql: '$vuetify.icons.db',
+        http: 'public',
+        https: 'public'
+      }
+    },
+    sourceInfo () {
+      const sources = {}
+      const projectDir = this.config.directory + path.sep
+      layersList(this.layers).forEach(l => {
+        let text = l.source
+        const schema = l.source.split('://')[0]
+        if (schema === 'file') {
+          text = text.substring(7)
+          if (text.startsWith(projectDir)) {
+            text = text.substring(projectDir.length)
+          }
+        }
+        sources[l.name] = {
+          icon: this.sourceIcons[schema],
+          text
+        }
+      })
+      return sources
     }
   },
   watch: {
@@ -161,14 +186,24 @@ export default {
   font-size: 15px;
   // max-width: 550px;
   border: 1px solid #ddd;
-  ::v-deep .header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+  ::v-deep {
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
   }
   ::v-deep > * {
     align-self: center;
     padding: 0 8px;
+  }
+}
+.layers-table {
+  .source span {
+    max-width: 400px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
 </style>

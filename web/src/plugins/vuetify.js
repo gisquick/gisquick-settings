@@ -6,6 +6,14 @@ import VIcon from '@/components/VIcon.vue'
 
 Vue.use(Vuetify)
 
+function customIcon (name) {
+  return {
+    component: VIcon,
+    props: { name }
+  }
+}
+const customIcons = ['db', 'qgis']
+
 export default new Vuetify({
   theme: {
     themes: {
@@ -16,13 +24,6 @@ export default new Vuetify({
     }
   },
   icons: {
-    values: {
-      qgis: {
-        component: VIcon,
-        props: {
-          name: 'qgis'
-        }
-      }
-    }
-  },
+    values: Object.assign({}, ...customIcons.map(name => ({ [name]: customIcon(name) })))
+  }
 })

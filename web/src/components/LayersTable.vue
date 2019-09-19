@@ -53,7 +53,8 @@ export default {
         cmp = (
           <v-layout
             shrink align-center
-            style={indentStyle} onClick={() => this.$emit('click:row', item)}
+            style={indentStyle}
+            onClick={() => this.$emit('click:row', item)}
           >
             <icon name={layerIcon(item)} class="grey--text mr-2"/>
             <span>{item.name}</span>
@@ -135,6 +136,9 @@ export default {
   border-spacing: 0;
   th, td {
     padding: 0 12px;
+  }
+  td {
+    height: 32px;
   }
   .header {
     background-color: #eee;

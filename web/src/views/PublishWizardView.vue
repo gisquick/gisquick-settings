@@ -134,50 +134,10 @@
 <script>
 import _omit from 'lodash/omit'
 import { basename, extname } from 'path'
+import { layersList, filterLayers, scalesToResolutions } from '@/utils'
 import Page from '@/mixins/Page'
 import PluginDisconnected from '@/components/PluginDisconnected'
 import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
-
-/* Converts array of map scales to tile resolutions. */
-function scalesToResolutions(scales, units, dpi = 96) {
-  const factor = {
-    feet: 12.0,
-    meters: 39.37,
-    miles: 63360.0,
-    degrees: 4374754.0
-  }
-  return scales.map(scale => parseInt(scale) / (dpi * factor[units]))
-}
-
-function layersList (items) {
-  const list = []
-  items.forEach(item => {
-    if (item.layers) {
-      list.push(...layersList(item.layers))
-    } else {
-      list.push(item)
-    }
-  })
-  return list
-}
-
-function filterLayers (items, test) {
-  const list = []
-  items.forEach(item => {
-    if (item.layers) {
-      const children = filterLayers(item.layers, test)
-      if (children.length) {
-        list.push({
-          ...item,
-          layers: children
-        })
-      }
-    } else if (test(item)) {
-      list.push(item)
-    }
-  })
-  return list
-}
 
 export default {
   name: 'PublishWizardView',
@@ -220,9 +180,13 @@ export default {
     // this.fetchProjectInfo()
   },
   activated () {
+    this.$ws.bind('ProjectChanged', this.onProjectChange)
     if (!this.projectInfo) {
       this.fetchProjectInfo()
     }
+  },
+  deactivated () {
+    this.$ws.unbind('ProjectChanged', this.onProjectChange)
   },
   beforeDestroy () {
     // this.$ws.unbind('PluginConnected', this.fetchProjectInfo)
@@ -238,6 +202,13 @@ export default {
     }
   },
   methods: {
+    onProjectChange () {
+      this.projectInfo = null
+      this.projectConfig = null
+      this.serverFiles = null
+      this.$router.push({ name: 'publish' })
+      this.fetchProjectInfo()
+    },
     fetchProjectInfo () {
       this.$ws.request('ProjectInfo')
         .then(resp => {

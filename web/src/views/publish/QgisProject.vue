@@ -29,7 +29,7 @@ export default {
         layers: {
           component: LayersInfo,
           props: {
-            layers: this.config.layers
+            config: this.config
           }
         },
         info: {

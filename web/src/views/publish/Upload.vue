@@ -18,7 +18,11 @@
     </files-browser>
     <v-layout class="row toolbar mx-1 my-1">
       <v-spacer/>
-      <v-btn rounded @click="uploadFiles">
+      <v-btn
+        rounded
+        :disabled="fetchingLocalFiles || fetchingServerFiles || uploadProgress !== null"
+        @click="uploadFiles"
+      >
         <v-icon class="mr-2">cloud_upload</v-icon>
         <span>Upload</span>
       </v-btn>
@@ -58,7 +62,7 @@ export default {
       immediate: true,
       handler (path) {
         if (path) {
-          this.fetchServerFiles()
+          // this.fetchServerFiles()
         } else {
           this.dest = []
         }
