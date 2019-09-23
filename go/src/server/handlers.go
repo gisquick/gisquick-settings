@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -339,6 +340,46 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 		defer r.Body.Close()
 		fs.SaveToFile(r.Body, dest)
 		w.Write([]byte(""))
+	}
+}
+
+func (s *Server) handleGetProjectMeta() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		filename := chi.URLParam(r, "name")
+
+		regexString := fmt.Sprintf("%s(_(\\d{10}))?\\.meta$", regexp.QuoteMeta(filename))
+		regex := regexp.MustCompile(regexString)
+		var matchedFilename string
+		matchedTimestamp := -1
+
+		root := filepath.Join(s.config.ProjectsDirectory, username, directory)
+		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && strings.HasSuffix(info.Name(), ".meta") {
+				groups := regex.FindStringSubmatch(info.Name())
+				if len(groups) == 3 {
+					timestamp, _ := strconv.Atoi(groups[2])
+					if timestamp > matchedTimestamp {
+						matchedFilename = groups[0]
+						matchedTimestamp = timestamp
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil && !os.IsNotExist(err) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if matchedFilename == "" {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(root, matchedFilename))
 	}
 }
 
