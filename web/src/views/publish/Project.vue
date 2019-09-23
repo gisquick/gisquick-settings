@@ -1,5 +1,5 @@
 <template>
-  <v-layout column>
+  <v-layout class="column box">
     <v-form class="px-3">
       <v-text-field
         label="Title"
@@ -85,5 +85,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
+.box {
+  border: 1px solid #ccc
+}
 </style>

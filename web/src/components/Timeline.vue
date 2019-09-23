@@ -108,18 +108,21 @@
         <v-btn
           text small dark
           :to="{name: 'settings', params: {page: 'project'}}"
+          active-class="primary--text"
           >
             <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Project
           </v-btn>
         <v-btn
           text small dark
           :to="{name: 'settings', params: {page: 'layers'}}"
+          active-class="primary--text"
         >
           <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Layers
         </v-btn>
         <v-btn
           text small dark
           :to="{name: 'settings', params: {page: 'topics'}}"
+          active-class="primary--text"
         >
           <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Topics
         </v-btn>
@@ -132,7 +135,7 @@
       size="48px"
     />
     <v-btn
-      text dark
+      text dark disabled
       class="r-8"
     >
       Publish
@@ -149,7 +152,7 @@
       >
         <path
           d="M 0.5 0 V 31"
-          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.5px"
+          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.8px"
         />
       </svg>
     </div>
@@ -164,7 +167,7 @@
       >
         <path
           d="M 31.5 0 V 31"
-          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.5px"
+          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.8px"
         />
       </svg>
     </div>
@@ -206,6 +209,10 @@ export default {
     .v-btn {
       margin-top: 2px;
       margin-bottom: 2px;
+      text-transform: none;
+      &:before {
+        display: none;
+      }
     }
   }
   .browsers {

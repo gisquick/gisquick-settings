@@ -39,7 +39,7 @@
     </v-app-bar>
 
     <keep-alive>
-      <router-view v-if="user && $ws.connected" class="fill-height my-2"/>
+      <router-view v-if="user && $ws.connected" class="fill-height"/>
     </keep-alive>
   </v-layout>
 </template>

@@ -12,7 +12,7 @@
         <v-toolbar-title>Local files</v-toolbar-title>
         <v-spacer/>
         <v-toolbar-items>
-
+          <slot name="src-toolbar"/>
         </v-toolbar-items>
       </v-toolbar>
       <template v-if="$ws.pluginConnected">
@@ -64,7 +64,7 @@
           </v-treeview>
         </div>
       </template>
-      <p v-else class="mx-3 my-3">QGIS plugin not connected</p>
+      <plugin-disconnected v-else class="disconnect-msg"/>
     </v-layout>
 
     <!-- Server -->
@@ -130,6 +130,7 @@
 import Path from 'path'
 import { dirname, basename } from 'path'
 import _keyBy from 'lodash/keyBy'
+import PluginDisconnected from '@/components/PluginDisconnected'
 
 function compareFilenames (a, b) {
   const depthA = a.path.split(Path.sep).length
@@ -166,6 +167,7 @@ function filesTree (files) {
 
 export default {
   name: 'FilesBrowser',
+  components: { PluginDisconnected },
   props: {
     srcPath: String,
     destPath: String,
@@ -194,11 +196,20 @@ export default {
     serverFilesTree () {
       return filesTree(this.serverFiles)
     },
+    loading () {
+      return this.srcLoading || this.destLoading
+    },
     newFiles () {
+      if (this.loading) {
+        return []
+      }
       const files = this.localFiles.filter(lf => !this.serverFiles.find(sf => sf.path === lf.path))
       return _keyBy(files, 'path')
     },
     modifiedFiles () {
+      if (this.loading) {
+        return []
+      }
       const files = this.localFiles.filter(lf => this.serverFiles.find(sf => sf.path === lf.path && sf.hash !== lf.hash))
       return _keyBy(files, 'path')
     },
@@ -267,6 +278,12 @@ export default {
       color: inherit;
       opacity: 0.75;
     }
+  }
+}
+ ::v-deep .disconnect-msg {
+   padding: 50px;
+  img {
+    // width: 400px;
   }
 }
 </style>

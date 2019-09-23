@@ -1,134 +1,34 @@
 <template>
-  <div class="page mb-1">
-    <v-layout class="column box">
-      <v-toolbar
-        dark
-        elevation="2"
-        class="shrink"
-        color="grey darken-2"
-        height="42"
-      >
-        <v-toolbar-title>Local files</v-toolbar-title>
-        <v-spacer/>
-        <v-toolbar-items>
-          <v-btn icon @click="fetchLocalFiles">
-            <v-icon>refresh</v-icon>
-          </v-btn>
-        </v-toolbar-items>
-      </v-toolbar>
-      <template v-if="$ws.pluginConnected">
-        <v-text-field
-          label="Directory"
-          :value="localDirectory"
-          class="shrink mt-2 px-4"
-          readonly
-          disabled
-          hide-details
-        />
-        <v-layout
-          v-if="loadingLocalFiles"
-          class="column grow align-center justify-center mx-4 my-4"
-        >
-          <div class="subtitle-1">Loading</div>
-          <v-progress-linear
-            indeterminate
-            rounded
-            height="6"
-          />
-        </v-layout>
-        <div v-else class="scroll-container mt-1">
-          <v-treeview
-            :items="localFilesTree"
-            class="mt-2 px-2"
-            dense
-          >
-            <template v-slot:label="{ item, open }">
-              <v-layout :style="filesStyles[item.path]">
-                <v-icon v-if="item.children">
-                  {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
-                </v-icon>
-                <v-icon v-else>mdi-file-document-outline</v-icon>
-                <span>{{ item.name }}</span>
-                <v-spacer/>
-                <v-layout
-                  class="column filesize upload shrink ml-2"
-                  :class="{'progress-active': upload && upload[item.path]}"
-                >
-                  <span>{{ item.size | filesize }}</span>
-                  <v-progress-linear
-                    v-if="upload && upload[item.path]"
-                    :value="upload[item.path].progress"
-                  />
-                </v-layout>
-              </v-layout>
-            </template>
-          </v-treeview>
-        </div>
+  <v-layout class="column files-page fill-height">
+    <files-browser
+      ref="filesBrowser"
+      :src-files="localFiles"
+      :src-path="localDirectory"
+      :src-loading="loadingLocalFiles"
+      :dest-path="projectPath"
+      :dest-loading="loadingServerFiles"
+      :dest-files="serverFiles"
+      :files-progress="upload"
+      class="mb-1"
+    >
+      <template v-slot:src-toolbar>
+        <v-btn icon @click="fetchLocalFiles">
+          <v-icon>refresh</v-icon>
+        </v-btn>
       </template>
-      <p v-else class="mx-3 my-3">QGIS plugin not connected</p>
-    </v-layout>
-
-    <!-- Server -->
-    <v-layout class="column box">
-      <v-toolbar
-        dark
-        elevation="2"
-        class="shrink"
-        color="grey darken-2"
-        height="42"
-      >
-        <v-toolbar-title>Server files</v-toolbar-title>
-        <v-spacer/>
-        <v-toolbar-items>
-          <v-btn
-            icon
-            :disabled="loadingServerFiles"
-            @click="fetchServerFiles"
-          >
-            <v-icon>refresh</v-icon>
-          </v-btn>
-        </v-toolbar-items>
-      </v-toolbar>
-      <v-text-field
-        label="Project"
-        :value="projectPath"
-        class="shrink mt-2 px-4"
-        readonly
-        disabled
-        hide-details
-      />
-      <v-layout
-        v-if="loadingServerFiles"
-        class="column grow align-center justify-center mx-4 my-4"
-      >
-        <div class="subtitle-1">Loading</div>
-        <v-progress-linear
-          indeterminate
-          rounded
-          height="6"
-        />
-      </v-layout>
-      <div v-else class="scroll-container mt-1">
-        <v-treeview
-          :items="serverFilesTree"
-          class="mt-4 px-2"
-          dense
-        >
-          <template v-slot:prepend="{ item, open }">
-            <v-icon v-if="item.children">
-              {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
-            </v-icon>
-            <v-icon v-else>mdi-file-document-outline</v-icon>
-          </template>
-          <template v-slot:append="{ item, open }">
-            <span class="ml-4">{{ item.size | filesize }}</span>
-          </template>
-        </v-treeview>
-      </div>
-    </v-layout>
+      <template v-slot:dest-toolbar>
+        <v-btn icon @click="fetchServerFiles">
+          <v-icon>refresh</v-icon>
+        </v-btn>
+      </template>
+    </files-browser>
     <div class="toolbar mx-1 my-1">
       <v-spacer/>
-      <v-btn rounded @click="startUpload">
+      <v-btn
+        rounded
+        :disabled="!canUpload"
+        @click="startUpload"
+      >
         <v-icon class="mr-2">cloud_upload</v-icon>
         <span>Upload</span>
       </v-btn>
@@ -137,49 +37,15 @@
         <span>Download</span>
       </v-btn>
     </div>
-  </div>
+  </v-layout>
 </template>
 
 <script>
-import Path from 'path'
-import { dirname, basename } from 'path'
-import _keyBy from 'lodash/keyBy'
-
-function compareFilenames (a, b) {
-  const depthA = a.path.split(Path.sep).length
-  const depthB = b.path.split(Path.sep).length
-  if (depthA === depthB) {
-    return basename(a.path).localeCompare(basename(b.path))
-  }
-  return depthA - depthB
-}
-
-function filesTree (files) {
-  const root = { children: [] }
-  files.forEach(f => {
-    let parent = root
-    const dir = dirname(f.path)
-    if (dir !== '.') {
-      const parts = dir.split(Path.sep)
-      parts.forEach(name => {
-        let node = parent.children.find(i => i.name === name)
-        if (!node) {
-          node = {name: name, children: []}
-          parent.children.push(node)
-        }
-        parent = node
-      })
-    }
-    parent.children.push({
-      ...f,
-      name: basename(f.path)
-    })
-  })
-  return root.children
-}
+import FilesBrowser from '@/components/FilesBrowser'
 
 export default {
   name: 'Files',
+  components: { FilesBrowser },
   props: {
     user: String,
     folder: String,
@@ -196,39 +62,11 @@ export default {
     }
   },
   computed: {
-    // user () {
-    //   return this.$root.user
-    // },
     projectPath () {
       return this.user && this.folder && `${this.user}/${this.folder}`
     },
-    localFilesTree () {
-      return filesTree(this.localFiles)
-    },
-    serverFilesTree () {
-      return filesTree(this.serverFiles)
-    },
-    newFiles () {
-      const files = this.localFiles.filter(lf => !this.serverFiles.find(sf => sf.path === lf.path))
-      return _keyBy(files, 'path')
-    },
-    modifiedFiles () {
-      const files = this.localFiles.filter(lf => this.serverFiles.find(sf => sf.path === lf.path && sf.checksum !== lf.checksum))
-      return _keyBy(files, 'path')
-    },
-    filesStyles () {
-      const styles = {}
-      this.localFiles.forEach(f => {
-        if (this.newFiles[f.path]) {
-          var color = 'green'
-        } else if (this.modifiedFiles[f.path]) {
-          color = 'orange'
-        } else {
-          color = '#444'
-        }
-        styles[f.path] = { color }
-      })
-      return styles
+    canUpload () {
+      return !this.loadingLocalFiles && !this.loadingServerFiles && this.localFiles.length > 0
     }
   },
   watch: {
@@ -256,7 +94,7 @@ export default {
     onFilesMessage (e, msg) {
       this.loadingLocalFiles = false
       const data = JSON.parse(msg)
-      this.localFiles = data.files.sort(compareFilenames)
+      this.localFiles = data.files
       this.localDirectory = data.directory
     },
     onProgressMessage(e, msg) {
@@ -287,16 +125,18 @@ export default {
       this.loadingServerFiles = true
       this.$http.get(`/api/project/files/${this.projectPath}`)
         .then(resp => {
-          this.serverFiles = resp.data.sort(compareFilenames)
+          this.serverFiles = resp.data
           this.loadingServerFiles = false
         })
         .catch(err => {
+          console.error(err)
           this.loadingServerFiles = false
         })
     },
     startUpload () {
-      // const files = this.localFiles.filter(f => this.newFiles[f.path] || this.modifiedFiles[f.path])
-      const files = this.localFiles.filter(f => this.newFiles[f.path])
+      const { newFiles, modifiedFiles } = this.$refs.filesBrowser
+      // const files = this.localFiles.filter(f => newFiles[f.path] || modifiedFiles[f.path])
+      const files = this.localFiles.filter(f => newFiles[f.path])
       const upload = {}
       files.forEach(f => {
         upload[f.path] = {
@@ -311,53 +151,13 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-.scroll-container {
-  overflow: auto;
-  flex: 1 1;
+.browser {
+  overflow: hidden;
 }
-.upload-bar {
-  width: 70px;
-  margin: auto 0;
-}
-.filesize {
-  width: 80px;
-  text-align: right;
-
-  &.upload {
-    position: relative;
-    &.progress-active {
-      span {
-        transform: scale(0.85, 0.85);
-      }
-    }
-    span {
-      transform-origin: top right;
-      transition: 0.25s transform ease;
-    }
-    .v-progress-linear {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-    }
-  }
-}
-.page {
-  display: grid;
-  grid-gap: 4px;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr auto;
-
+.files-page {
   .box {
     border: 1px solid #aaa;
     overflow: hidden;
-  }
-  .v-treeview {
-    min-width: 300px;
-    .v-icon {
-      color: inherit;
-      opacity: 0.75;
-    }
   }
   .toolbar {
     grid-column: 1 / 3;

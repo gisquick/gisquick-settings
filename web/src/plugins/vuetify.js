@@ -12,7 +12,7 @@ function customIcon (name) {
     props: { name }
   }
 }
-const customIcons = ['db', 'qgis']
+const customIcons = ['db', 'qgis', 'desktop']
 
 export default new Vuetify({
   theme: {

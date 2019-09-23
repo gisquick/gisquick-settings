@@ -1,30 +1,41 @@
 <template>
-  <div class="content">
-    <portal to="menu-breadcrumbs" v-if="pageVisible">
+  <div class="page">
+    <portal to="menu-breadcrumbs" v-if="pageVisible && projectConfig">
       <v-icon>keyboard_arrow_right</v-icon>
-      <v-btn text color="orange">
+      <v-btn text color="orange" style="text-transform:none">
         <v-icon class="mr-1">map</v-icon>
-        {{ config && config.root_title }}
+        {{ projectConfig.title }}
       </v-btn>
     </portal>
     <portal to="menu-actions" v-if="pageVisible">
       <!-- <project-menu :user="user" :folder="folder"/> -->
       <project-menu v-bind="$route.params"/>
     </portal>
-    <keep-alive>
-      <router-view v-if="config" :config="config"/>
-    </keep-alive>
+
+    <v-layout class="column mr-2 py-2 left-panel mt-2 elevation-3">
+      <timeline/>
+      <v-spacer/>
+    </v-layout>
+
+    <div class="content my-2">
+      <keep-alive>
+        <router-view v-if="projectConfig"/>
+      </keep-alive>
+    </div>
   </div>
 </template>
 
 <script>
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
+import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
+import Timeline from '@/components/Timeline'
+import { layersList, filterLayers } from '@/utils'
 
 export default {
   name: 'Project',
   mixins: [ Page ],
-  components: { ProjectMenu },
+  components: { ProjectMenu, TimelinePrimaryLink, Timeline },
   props: {
     user: String,
     folder: String,
@@ -32,13 +43,16 @@ export default {
   },
   data () {
     return {
-      config: null
+      projectConfig: null
     }
   },
   computed: {
     projectPath () {
       return [this.user, this.folder, this.projectName].join('/')
     },
+    overlays () {
+      return this.projectConfig && filterLayers(this.projectConfig.layers, l => l.publish)
+    }
     // overlayLayers () {
     //   return this.layers.filter(item => !this.baseLayersNames.includes(item.name))
     // },
@@ -53,25 +67,46 @@ export default {
         if (projectName) {
           this.fetchProjectConfig()
         } else {
-          this.config = null
+          this.projectConfig = null
         }
       }
     }
   },
   methods: {
     fetchProjectConfig () {
-      const params = { PROJECT: this.projectPath }
-      this.$http.get('/project.json', { params })
+      // const params = { PROJECT: this.projectPath }
+      // this.$http.get('/project.json', { params })
+      this.$http.get(`/api/project/meta/${this.projectPath}`)
         .then(resp => {
-          this.config = resp.data
+          resp.data.layers = resp.data.overlays
+          layersList(resp.data.layers).forEach(l => {
+            l.publish = true
+          })
+          this.projectConfig = resp.data
         })
+        .catch(err => {
+          this.projectConfig = null
+        })
+    },
+    saveChanges () {
+
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.page {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(auto, 1fr) auto 1fr;
+}
 .content > * {
   width: 100%;
+}
+.left-panel {
+  background-color: #3f3f3f;
+  min-width: 250px;
+  overflow: auto;
 }
 </style>

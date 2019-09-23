@@ -1,5 +1,5 @@
 <template>
-  <div class="elevation-2 content">
+  <div class="elevation-2 content my-2">
     <portal to="menu-actions" v-if="pageVisible">
       <projects-menu @upload-finished="fetchProjects"/>
     </portal>

@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page my-2">
     <portal to="menu-breadcrumbs" v-if="pageVisible">
       <v-icon>keyboard_arrow_right</v-icon>
       <v-btn text rounded color="orange">
@@ -121,7 +121,7 @@
       <keep-alive>
         <plugin-disconnected
           v-if="$route.meta.requiresPlugin && !$ws.pluginConnected"
-          class="grow"
+          class="grow disconnect-msg"
         />
         <router-view v-else class="scroll-area"/>
         <!-- <router-view v-if="$ws.pluginConnected" class="scroll-area"/>
@@ -346,5 +346,9 @@ export default {
   .v-divider {
     border-style: dashed;
   }
+}
+
+::v-deep .disconnect-msg {
+  border: 2px dashed #ddd;
 }
 </style>

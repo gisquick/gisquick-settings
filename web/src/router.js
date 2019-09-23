@@ -1,7 +1,5 @@
 import VueRouter from 'vue-router'
 import FilesView from '@/views/FilesView'
-import LayersView from '@/views/LayersView'
-import TopicsView from '@/views/TopicsView'
 import ProjectView from '@/views/ProjectView'
 import ProjectsView from '@/views/ProjectsView'
 import PublishWizardView from '@/views/PublishWizardView'
@@ -52,27 +50,14 @@ export default new VueRouter({
     {
       path: '/:user/:folder/:projectName/',
       name: 'project',
-      redirect: { name: 'layers' },
       props: true,
       component: ProjectView,
+      redirect: { name: 'settings' },
       children: [
         {
-          path: '/',
-          redirect: 'layers'
-        },
-        {
-          path: 'layers',
-          name: 'layers',
-          component: LayersView
-          // components: {
-          //   default: LayersView,
-          //   store: LayersStore
-          // }
-        },
-        {
-          path: 'topics',
-          name: 'topics',
-          component: TopicsView
+          path: 'settings/:page?',
+          name: 'settings',
+          component: Config
         },
         {
           path: 'files',

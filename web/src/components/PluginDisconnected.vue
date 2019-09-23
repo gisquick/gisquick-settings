@@ -1,5 +1,8 @@
 <template functional>
-  <v-layout column align-center justify-center>
+  <v-layout
+    column align-center justify-center
+    :class="[data.class, data.staticClass]"
+  >
     <h4 class="my-4">QGIS plugin is not connected!</h4>
     <img src="@/assets/qgis_disconnected.svg" class="my-2">
   </v-layout>
@@ -12,14 +15,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.layout {
-  border: 2px dashed #ddd;
-}
 h4 {
   color: #F44336;
   font-weight: 500;
 }
 img {
-  max-width: 600px;
+  width: 600px;
+  max-width: 80%;
 }
 </style>

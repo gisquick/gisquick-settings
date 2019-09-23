@@ -22,31 +22,13 @@
     <v-btn
       rounded text
       class="mx-1"
-      active-class="orange--text"
-      :to="{name: 'layers'}"
+      target="_blank"
+      :href="`/?PROJECT=${user}/${folder}/${projectName}`"
     >
-      <v-icon class="mr-2">layers</v-icon>
-      <span>Layers</span>
+      <v-icon class="mr-2">map</v-icon>
+      <span>Map</span>
     </v-btn>
-    <v-btn
-      rounded text
-      class="mx-1"
-      active-class="orange--text"
-      :to="{name: 'topics'}"
-    >
-      <icon name="topics" class="mr-2"/>
-      <span>Topics</span>
-    </v-btn>
-    <v-btn
-      rounded text
-      class="mx-1"
-      active-class="orange--text"
-      :to="{name: 'files'}"
-    >
-      <v-icon class="mr-2">cloud_upload</v-icon>
-      <span>Files</span>
-    </v-btn>
-    <v-divider vertical class="mt-2"/>
+    <v-divider vertical class="my-1"/>
     <v-btn
       rounded text
       class="mx-1 deep-orange--text"
