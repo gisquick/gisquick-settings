@@ -47,6 +47,18 @@ type messageHandler interface {
 	Process(msg []byte) error
 }
 
+type pingHandler struct {
+	client *Client
+}
+
+func (h pingHandler) Accept(msg []byte) bool {
+	return bytes.Compare(msg, []byte("PingPlugin")) == 0
+}
+
+func (h pingHandler) Process(msg []byte) error {
+	return h.client.WsConn.WriteMessage(websocket.TextMessage, []byte("PongPlugin"))
+}
+
 type filesHandler struct {
 	client *Client
 }
@@ -61,7 +73,7 @@ func (h filesHandler) Process(msg []byte) error {
 		Files     []fs.File `json:"files"`
 	}
 
-	directory := h.client.OnMessageCallback([]byte("ProjectDirectory"))
+	directory := h.client.OnMessageCallback([]byte("projectDirectory"))
 	files, err := fs.ListDir(directory)
 	if err != nil {
 		return err
@@ -106,7 +118,7 @@ func (h uploadHandler) Process(msg []byte) error {
 		compressRegex := regexp.MustCompile("(?i).*\\.(qgs|svg|json|sqlite|gpkg|geojson)$")
 		defer writeBody.Close()
 		writer.WriteField("changes", string(jsonData))
-		directory := h.client.OnMessageCallback([]byte("ProjectDirectory"))
+		directory := h.client.OnMessageCallback([]byte("projectDirectory"))
 
 		for _, f := range params.Files {
 			// ext := filepath.Ext(f.Path)
@@ -187,6 +199,7 @@ func (c *Client) Start() error {
 	done := make(chan struct{})
 
 	var messageHandlers []messageHandler
+	messageHandlers = append(messageHandlers, pingHandler{c})
 	messageHandlers = append(messageHandlers, filesHandler{c})
 	messageHandlers = append(messageHandlers, uploadHandler{c})
 
