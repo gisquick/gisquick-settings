@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -41,7 +42,7 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 			// Read message from source connection
 			msgType, msg, err := srcConn.ReadMessage()
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				break
 			}
 
@@ -77,7 +78,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 			// Read message from source connection
 			msgType, msg, err := srcConn.ReadMessage()
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				break
 			}
 
@@ -182,6 +183,10 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 
+		if r.ContentLength > s.config.MaxFileUpload {
+			http.Error(w, "File size is over limit", http.StatusExpectationFailed)
+			return
+		}
 		ctype, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || ctype != "multipart/form-data" {
 			http.Error(w, "Invalid content type", 400)
@@ -193,6 +198,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			return
 		}
 
+		r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileUpload)
 		reader := multipart.NewReader(r.Body, boundary)
 		part, _ := reader.NextPart()
 		if !strings.HasSuffix(part.FileName(), ".zip") {
@@ -208,6 +214,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		defer os.Remove(tmpfile.Name())
 		_, err = io.Copy(tmpfile, part)
 		if err != nil {
+			log.Println(err)
 			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}

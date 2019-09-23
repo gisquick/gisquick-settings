@@ -15,6 +15,7 @@ import (
 type Config struct {
 	ProjectsDirectory string
 	Server            string
+	MaxFileUpload     int64
 }
 
 // User export
