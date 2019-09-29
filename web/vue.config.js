@@ -29,6 +29,24 @@ module.exports = {
       .end()
       .end()
 
+      .oneOf('inline-svg')
+      .test(/inline\/.*\.svg$/)
+      .use('vue-svg-loader')
+      .loader('vue-svg-loader')
+      .options({
+        svgo: {
+          plugins: [
+            {removeDoctype: true},
+            {removeComments: true},
+            {cleanupIDs: false},
+            {collapseGroups: false},
+            {removeEmptyContainers: false}
+          ]
+        }
+      })
+      .end()
+      .end()
+
       .oneOf('other')
       .use('file-loader')
       .loader('file-loader')
