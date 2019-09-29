@@ -22,11 +22,8 @@ import (
 var c *client.Client
 
 //export Start
-func Start(url string, user string, fn C.message_callback) int {
-	// c = client.NewClient(url)
-	c = &client.Client{}
-	c.Server = url
-	c.User = user
+func Start(url string, user string, password string, fn C.message_callback) int {
+	c = client.NewClient(url, user, password)
 	c.OnMessageCallback = func(message []byte) string {
 		cmsg := C.CString(string(message))
 		defer C.free(unsafe.Pointer(cmsg))

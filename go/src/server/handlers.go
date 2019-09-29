@@ -12,6 +12,8 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -25,7 +27,8 @@ import (
 
 func (s *Server) handlePluginWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := chi.URLParam(r, "user")
+		user := r.Context().Value(contextKeyUser).(*User)
+		username := user.Username
 		fmt.Printf("Plugin WS: %s\n", username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -420,5 +423,12 @@ func (s *Server) handleDev() http.HandlerFunc {
 			data.User = user
 		}
 		s.jsonResponse(w, data)
+	}
+}
+
+func (s *Server) handleProxyRequest() http.HandlerFunc {
+	url, _ := url.Parse(s.config.Server)
+	return func(w http.ResponseWriter, r *http.Request) {
+		httputil.NewSingleHostReverseProxy(url).ServeHTTP(w, r)
 	}
 }

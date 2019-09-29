@@ -11,6 +11,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/http/cookiejar"
 	"net/textproto"
 	"net/url"
 	"os"
@@ -26,9 +27,22 @@ import (
 type Client struct {
 	Server            string
 	User              string
+	Password          string
+	httpClient        *http.Client
 	WsConn            *websocket.Conn
 	interrupt         chan os.Signal
 	OnMessageCallback func([]byte) string
+}
+
+// NewClient export
+func NewClient(url, user, password string) *Client {
+	c := Client{}
+	c.Server = url
+	c.User = user
+	c.Password = password
+	cookieJar, _ := cookiejar.New(nil)
+	c.httpClient = &http.Client{Jar: cookieJar}
+	return &c
 }
 
 // SendJSONMessage export
@@ -150,7 +164,6 @@ func (h uploadHandler) Process(msg []byte) error {
 		errChan <- writer.Close()
 	}()
 
-	client := &http.Client{}
 	url := fmt.Sprintf("%s/api/project/upload/%s", h.client.Server, params.Project)
 	req, err := http.NewRequest("POST", url, readBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -160,7 +173,7 @@ func (h uploadHandler) Process(msg []byte) error {
 	// 	req.Header.Set("Authorization", token)
 	// }
 
-	resp, err := client.Do(req)
+	resp, err := h.client.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -175,8 +188,37 @@ func (h uploadHandler) Process(msg []byte) error {
 	return <-errChan
 }
 
+func (c *Client) login() error {
+	form := url.Values{"username": {c.User}, "password": {c.Password}}
+	url := fmt.Sprintf("%s/login/", c.Server)
+	resp, err := c.httpClient.PostForm(url, form)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Authentication failed")
+	}
+	return nil
+}
+
+func (c *Client) logout() error {
+	url := fmt.Sprintf("%s/logout/", c.Server)
+	_, err := c.httpClient.Get(url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Start export
 func (c *Client) Start() error {
+	err := c.login()
+	if err != nil {
+		return err
+	}
+	defer c.logout()
+
 	c.interrupt = make(chan os.Signal, 1)
 	signal.Notify(c.interrupt, os.Interrupt)
 
@@ -186,10 +228,15 @@ func (c *Client) Start() error {
 	} else {
 		u.Scheme = "ws"
 	}
-	u.Path = fmt.Sprintf("/ws/plugin/%s", c.User)
+	u.Path = fmt.Sprintf("/ws/plugin")
 	log.Printf("connecting to %s", u.String())
 
-	wsConn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	dialer := websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 30 * time.Second,
+		Jar:              c.httpClient.Jar,
+	}
+	wsConn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}

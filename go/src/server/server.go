@@ -81,12 +81,12 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 }
 
 func (s *Server) routes() {
-	s.router.Get("/ws/plugin/{user}", s.handlePluginWs())
+	s.router.Get("/ws/plugin", s.loginRequired(s.handlePluginWs()))
 	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
 	s.router.Get("/api/project/files/{user}/{directory}", s.loginRequired(s.handleProjectFiles()))
 	s.router.Post("/api/project/upload", s.loginRequired(s.handleNewUpload()))
 	// TODO: add authentication for upload (plugin)
-	s.router.Post("/api/project/upload/{user}/{directory}", s.handleUpload())
+	s.router.Post("/api/project/upload/{user}/{directory}", s.loginRequired(s.handleUpload()))
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))
 	s.router.Post("/api/project/config/{user}/{directory}", s.loginRequired(s.handleSaveConfig()))
@@ -96,7 +96,12 @@ func (s *Server) routes() {
 	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
 	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))
 	s.router.Get("/*", s.authMiddleware(s.handleIndex()))
+}
+
+func (s *Server) devRoutes() {
 	s.router.Get("/dev/", s.authMiddleware(s.handleDev()))
+	s.router.Post("/login/", s.handleProxyRequest())
+	s.router.HandleFunc("/logout/", s.handleProxyRequest())
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -114,5 +119,6 @@ func NewServer(config Config) *Server {
 	s := Server{config, chi.NewRouter(), upgrader, newWebsocketsMap(), newWebsocketsMap()}
 	s.router.Use(middleware.Logger)
 	s.routes()
+	s.devRoutes()
 	return &s
 }
