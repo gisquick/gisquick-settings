@@ -34,7 +34,7 @@ func Checksum(path string) (string, error) {
 
 // ListDir export
 func ListDir(root string) (*[]File, error) {
-	var files []File
+	var files []File = []File{}
 
 	root, _ = filepath.Abs(root)
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
