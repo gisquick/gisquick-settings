@@ -25,7 +25,7 @@
         <img :src="pluginStatusImg" class="mr-2"/>
         <v-menu>
           <template v-slot:activator="{ on: menu }">
-            <v-btn v-on="{ ...menu }" icon>
+            <v-btn icon height="40" width="40" v-on="{ ...menu }">
               <v-icon>menu</v-icon>
             </v-btn>
           </template>

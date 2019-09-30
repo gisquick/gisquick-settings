@@ -46,7 +46,7 @@
                 <v-icon v-if="item.children">
                   {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
                 </v-icon>
-                <v-icon v-else>mdi-file-document-outline</v-icon>
+                <file-icon v-else :path="item.path"/>
                 <span>{{ item.name }}</span>
                 <v-spacer/>
                 <v-layout
@@ -103,7 +103,7 @@
       </v-layout>
       <div v-else class="scroll-container mt-1">
         <v-treeview
-          v-if="destLoading || destFiles.length > 0"
+          v-if="destLoading || (destFiles && destFiles.length > 0)"
           :items="serverFilesTree"
           class="mt-2 px-2"
           dense
@@ -112,7 +112,7 @@
             <v-icon v-if="item.children">
               {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
             </v-icon>
-            <v-icon v-else>mdi-file-document-outline</v-icon>
+            <file-icon v-else :path="item.path"/>
           </template>
           <template v-slot:append="{ item, open }">
             <span class="ml-4">{{ item.size | filesize }}</span>
@@ -128,7 +128,7 @@
 
 <script>
 import Path from 'path'
-import { dirname, basename } from 'path'
+import { dirname, basename, extname } from 'path'
 import _keyBy from 'lodash/keyBy'
 import PluginDisconnected from '@/components/PluginDisconnected'
 
@@ -165,9 +165,27 @@ function filesTree (files) {
   return root.children
 }
 
+const FileIcon = {
+  functional: true,
+  props: {
+    path: String
+  },
+  render (h, ctx) {
+    const ext = extname(ctx.props.path).toLowerCase()
+    let icon = 'mdi-file-document-outline'
+    if (ext === '.qgs' || ext === '.qgz') {
+      icon = '$vuetify.icons.qgis'
+    } else if (ext === '.sqlite') {
+      icon = '$vuetify.icons.db'
+    } else if (ext.match(/\.(jpeg|jpg|gif|png|svg|tiff)$/) !== null) {
+      icon = 'image'
+    }
+    return <v-icon>{icon}</v-icon>
+  }
+}
 export default {
   name: 'FilesBrowser',
-  components: { PluginDisconnected },
+  components: { PluginDisconnected, FileIcon },
   props: {
     srcPath: String,
     destPath: String,
@@ -221,7 +239,7 @@ export default {
         } else if (this.modifiedFiles[f.path]) {
           color = '#FFA000'
         } else {
-          color = '#444'
+          color = '#222'
         }
         styles[f.path] = { color }
       })
@@ -277,6 +295,11 @@ export default {
     .v-icon {
       color: inherit;
       opacity: 0.75;
+      padding-right: 2px;
+      margin-right: 4px;
+    }
+    ::v-deep .v-treeview-node__label {
+      margin-left: 0;
     }
   }
 }

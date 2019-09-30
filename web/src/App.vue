@@ -47,4 +47,8 @@ html, body {
 a {
   text-decoration: none;
 }
+
+.theme--light.v-text-field > .v-input__control > .v-input__slot:before {
+  border-color: rgba(0, 0, 0, 0.15);
+}
 </style>
