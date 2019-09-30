@@ -30,18 +30,30 @@ export default {
           component: LayersInfo,
           props: {
             config: this.config
-          }
+          },
+          validate: 'layersInfo'
         },
         info: {
           component: GeneralInfo,
           props: {
             config: this.config
-          }
+          },
+          validate: 'generalInfo'
         }
       }
     },
     route () {
       return this.routes && this.routes[this.$route.params.page]
+    }
+  },
+  watch: {
+    route: {
+      immediate: true,
+      handler (route) {
+        if (route) {
+          this.store.publishProgress[route.validate] = true
+        }
+      }
     }
   }
 }

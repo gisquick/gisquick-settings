@@ -9,111 +9,42 @@
     </portal>
 
     <!-- Timeline -->
-    <v-layout class="column left-panel mr-1">
-      <v-timeline dense class="mr-2 py-0">
-        <v-timeline-item
-          class="flat grey--text pb-2"
-          color="transparent"
-          icon-color="grey"
-          large
-        >
-          <template v-slot:icon>
-            <icon name="desktop" class="desktop-img"/>
-          </template>
-        </v-timeline-item>
-
-        <!-- <v-layout align-center>
-          <v-divider class="ml-2"/>
-          <icon name="desktop" class="mx-2 desktop-img" style="width:36px"/>
-          <v-divider class="mr"/>
-        </v-layout> -->
-
-        <v-expand-transition>
-          <div v-if="!$ws.pluginConnected">
-            <v-timeline-item
-              icon-color="deep-orange"
-              color="transparent"
-              icon="close"
-              class="pb-1"
-              small
-            />
-          </div>
-        </v-expand-transition>
-
-        <!-- Step 1 -->
-        <timeline-primary-link
-          label="1. Check project"
-          :to="{name: 'qgis-project'}"
-          color="lime darken-2"
-          icon="$vuetify.icons.qgis"
-          :disabled="!$ws.pluginConnected"
-          :links="[
-            {text: 'General', page: 'info'},
-            {text: 'Layers', page: 'layers'}
-          ]"
-        />
-
-        <!-- Step 2 -->
-        <timeline-primary-link
-          label="2. Upload files"
-          :to="{name: 'publish-upload'}"
-          color="lime darken-2"
-          icon="cloud_upload"
-          :disabled="!$ws.pluginConnected"
-        />
-
-        <!-- <v-divider class="ml-3 my-4"/> -->
-        <!-- <v-timeline-item
-          class="flat grey--text py-2 align-center"
-          color="transparent"
-          icon-color="grey"
-        >
-          <template v-slot:icon>
-            <icon name="server" class="desktop-img"/>
-          </template>
-          <v-divider/>
-        </v-timeline-item> -->
-
-        <v-layout align-center>
-          <v-divider class="ml-2"/>
-          <icon name="server" class="mx-2 desktop-img" style="width:36px"/>
-          <v-divider/>
-        </v-layout>
-
-        <!-- Step 3 -->
-        <timeline-primary-link
-          label="3. Configure"
-          :to="{name: 'publish-config'}"
-          color="primary"
-          icon="settings"
-          :disabled="!serverActionsEnabled"
-          :links="[
-            {text: 'Project', page: 'project'},
-            {text: 'Layers', page: 'layers'},
-            {text: 'Topics', page: 'topics'}
-          ]"
-        />
-        <!-- Step 4 -->
-        <timeline-primary-link
-          label="4. Publish"
-          :xto="{name: 'publish-publish'}"
-          color="primary"
-          icon="public"
-          :disabled="!serverActionsEnabled"
-          @click="publish"
-        />
-
-        <v-timeline-item
-          class="flat grey--text pb-0 pt-2 align-center"
-          color="transparent"
-          icon-color="grey"
-          large
-        >
-          <template v-slot:icon>
-            <icon name="browser" class="desktop-img"/>
-          </template>
-        </v-timeline-item>
-      </v-timeline>
+    <v-layout class="column left-panel mr-1 py-2">
+      <timeline
+        :checkin="{
+          label: '1. Check-in',
+          link: { name: 'qgis-project' },
+          disabled: !$ws.pluginConnected,
+          done: progress.generalInfo && progress.layersInfo,
+          sublinks: [
+            {label: 'General', page: 'info'},
+            {label: 'Layers', page: 'layers'}
+          ]
+        }"
+        :files="{
+          label: '2. Upload',
+          link: {name: 'publish-upload'},
+          disabled: !progress.generalInfo || !progress.layersInfo || !$ws.pluginConnected,
+          done: progress.filesUploaded
+        }"
+        :settings="{
+          label: '3. Settings',
+          link: {name: 'publish-config'},
+          disabled: !serverActionsEnabled,
+          sublinks: [
+            {label: 'Project', page: 'project'},
+            {label: 'Layers', page: 'layers'},
+            {label: 'Topics', page: 'topics'}
+          ]
+        }"
+        :publish="{
+          label: '4. Publish',
+          disabled: this.projectConfig === null || !visitedLinks['publish-config'],
+          published: this.progress.published
+        }"
+        :visited="visitedLinks"
+        @publish="publish"
+      />
       <v-spacer/>
     </v-layout>
 
@@ -124,8 +55,6 @@
           class="grow disconnect-msg"
         />
         <router-view v-else class="scroll-area"/>
-        <!-- <router-view v-if="$ws.pluginConnected" class="scroll-area"/>
-        <plugin-disconnected v-else class="grow"/> -->
       </keep-alive>
     </div>
   </div>
@@ -137,17 +66,23 @@ import { basename, extname } from 'path'
 import { layersList, filterLayers, scalesToResolutions } from '@/utils'
 import Page from '@/mixins/Page'
 import PluginDisconnected from '@/components/PluginDisconnected'
-import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
+import Timeline from '@/components/Timeline'
 
 export default {
   name: 'PublishWizardView',
   mixins: [ Page ],
-  components: { PluginDisconnected, TimelinePrimaryLink },
+  components: { PluginDisconnected, Timeline },
   data () {
     return {
       projectInfo: null,
       projectConfig: null,
-      serverFiles: null
+      serverFiles: null,
+      publishProgress: {
+        generalInfo: false,
+        layersInfo: false,
+        published: false
+      },
+      visitedLinks: {}
     }
   },
   computed: {
@@ -173,6 +108,16 @@ export default {
     },
     overlays () {
       return this.projectConfig && filterLayers(this.projectConfig.layers, l => l.publish)
+    },
+    progress () {
+      const { generalInfo, layersInfo, published } = this.publishProgress
+      return {
+        projectInfo: this.projectInfo !== null,
+        generalInfo,
+        layersInfo,
+        filesUploaded: this.projectConfig !== null,
+        published
+      }
     }
   },
   created () {
@@ -191,6 +136,10 @@ export default {
   beforeDestroy () {
     // this.$ws.unbind('PluginConnected', this.fetchProjectInfo)
   },
+  beforeRouteLeave (to, from, next) {
+    Object.assign(this.$data, this.$options.data())
+    next()
+  },
   watch: {
     '$ws.pluginConnected': {
       immediate: true,
@@ -198,6 +147,12 @@ export default {
         if (this.pageVisible && connected && !this.projectInfo) {
           this.fetchProjectInfo()
         }
+      }
+    },
+    $route: {
+      immediate: true,
+      handler (route) {
+        this.$set(this.visitedLinks, route.name, true)
       }
     }
   },
@@ -250,6 +205,7 @@ export default {
       this.$http.post(`/api/project/meta/${this.projectPath}/${metafile}`, meta)
         .then(() => {
           this.$notification.show('Published!')
+          this.publishProgress.published = true
         })
     }
   }
@@ -270,6 +226,7 @@ export default {
     grid-row: 1 / 3;
     grid-column: 1 / 2;
     overflow: auto;
+    background-color: #3f3f3f;
   }
   .main {
     grid-row: 2 / 3;
@@ -279,75 +236,6 @@ export default {
     overflow: auto;
   }
 }
-.v-timeline {
-  position: relative;
-  max-width: 300px;
-  &:before {
-    top: 16px;
-    bottom: 16px;
-    height: auto;
-  }
-  .flat {
-    // height: 3em;
-    ::v-deep .v-timeline-item__dot {
-      background-color: #fafafa;
-      box-shadow: none;
-    }
-  }
-  .icon.desktop-img {
-    color: #bbb;
-    width: 100%;
-    height: 32px;
-  }
-  .v-divider {
-    border-style: dashed;
-  }
-}
-.timeline {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto 1fr auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  
-  .submenu {
-    grid-row: 2 / 3;
-    font-size: 14px;
-  }
-  
-  .v-btn {
-    &:first-child {
-      transform-origin: 0 50%;
-    }
-    text-transform: none;
-    .icon {
-      color: inherit;
-      transition: transform 0.3s linear;
-      &.flip {
-        transform: rotateY(180deg);
-      }
-    }
-    &.step {
-      // pointer-events: none;
-      min-width: 180px;
-      height: 36px;
-      // transition: all 0.3s linear;
-      // transform: scale(0.75, 0.75);
-      &.v-btn--active {
-        // height: 42px;
-        // transform: scale(1, 1);
-        transform: scale(1.15, 1.15);
-      }
-      &.theme--light {
-        background-color: #ddd;
-      }
-    }
-  }
-  .v-divider {
-    border-style: dashed;
-  }
-}
-
 ::v-deep .disconnect-msg {
   border: 2px dashed #ddd;
 }

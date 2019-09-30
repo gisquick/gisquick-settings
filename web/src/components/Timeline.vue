@@ -1,14 +1,15 @@
 <template>
   <div class="timeline my-2 mx-2">
     <v-layout class="desktop column align-center">
-      <icon
-        name="desktop-qgis"
-        color="lime darken-2"
-        class="mb-2"
-        size="32px"
-      />
-      <svg height="32" viewBox="0 0 100 100">
+      <desktop-svg style="opacity:0.9"/>
+      <svg height="32" viewBox="0 0 100 100" class="line">
         <path d="M 49 0 V 100" stroke="white" stroke-dasharray="4,4"/>
+        <path
+          :d="`M 49 0 V ${checkin.disabled ? 0 : 100}`"
+          style="transition: all 0.5s"
+          stroke="white"
+          stroke-width="2"
+        />
       </svg>
     </v-layout>
 
@@ -20,14 +21,67 @@
         width="100%"
         height="100%"
         style="padding:24px 0; position: absolute;"
+        class="line"
       >
-        <path d="M 100 0 Q 0 50 100 100" stroke="white" stroke-dasharray="4,4"/>
+        <path
+          d="M 50 0 Q 0 50 50 100"
+          stroke="white"
+          stroke-dasharray="4,4"
+        />
+        <!-- Progress line -->
+        <path
+          d="M 50 0 Q 0 50 50 100"
+          class="progress-line"
+          :xstroke-dasharray="`${files.disabled ? 0 : 120}, 500`"
+          :stroke-dasharray="`${!visited[files.link.name] ? 0 : 120}, 500`"
+        />
+      </svg>
+      <svg
+        v-if="activeItem === checkin"
+        class="line secondary-link"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        width="100%"
+        height="100%"
+        style="padding:24px 0; position: absolute;"
+      >
+        <path id="l1" d="M 100 35 H 100"/>
+        <path id="l2" d="M 100 60 h 0 v 0"/>
+        <path id="l3" d="M 85 35 v 0 l 0 0"/>
+        <animate
+          id="anim1"
+          xlink:href="#l1"
+          dur="0.3s"
+          attributeName="d"
+          fill="freeze"
+          values="M 100 35 H 100;
+                  M 100 35 H 85;"
+        />
+        <animate
+          xlink:href="#l2"
+          dur="0.3s"
+          attributeName="d"
+          fill="freeze"
+          values="M 100 60 h 0 v 0;
+                  M 100 60 h -15 v 0;
+                  M 100 60 h -15 v -25;"
+        />
+        <animate
+          xlink:href="#l3"
+          dur="0.3s"
+          attributeName="d"
+          fill="freeze"
+          begin="anim1.end"
+          values="M 85 35 v 0 l 0 0;
+                  M 85 35 V 15 l 0 0;
+                  M 85 35 V 15 L 60 0;"
+        />
       </svg>
     </div>
 
     <!-- Connection: Files -> Settings -->
     <div
-      style="grid-row: 4/7; grid-column:2/3; position: relative"
+      style="grid-row: 4/7; grid-column:1/2; position: relative"
       class="fill-height"
     >
       <svg
@@ -36,170 +90,267 @@
         width="100%"
         height="100%"
         style="padding: 24px 0; position: absolute"
+        class="line"
       >
-        <path d="M 0 0 Q 100 50 0 100" stroke="white" stroke-dasharray="4,4"/>
+        <path
+          d="M 50 0 Q 100 50 50 100"
+          stroke="white"
+          stroke-dasharray="4,4"
+        />
+        <path
+          d="M 50 0 Q 100 50 50 100"
+          class="progress-line"
+          :xstroke-dasharray="`${settings.disabled ? 0 : 120}, 500`"
+          :stroke-dasharray="`${!visited[settings.link.name] ? 0 : 120}, 500`"
+        />
       </svg>
     </div>
 
-    <icon
-      name="timeline-checkin"
+    <checkin-svg
       class="bullet r-2"
-      size="48px"
+      :class="{disabled: checkin.disabled, active: activeItem === checkin}"
     />
-    <v-btn class="r-2" text dark disabled>
-      Check-In
-    </v-btn>
-
     <div class="space r-3"/>
-
-    <icon
-      name="timeline-files"
+    <files-svg
       class="bullet r-4"
-      size="56px"
+      :class="{disabled: files.disabled, active: activeItem === files}"
     />
-    <v-btn
-      text dark
-      class="r-4"
-      :to="{name: 'files'}"
-    >
-      Files
-    </v-btn>
-
     <div class="space r-5"/>
 
-    <icon
-      name="timeline-settings"
-      class="bullet r-6"
-      size="48px"
-    />
-    <v-btn
-      text dark
-      class="r-6"
-      :to="{name: 'settings'}"
-    >
-      Settings
-    </v-btn>
-
-    <!-- <svg
-      height="32"
-      viewBox="0 0 100 100"
-      style="grid-row: 7/8; grid-column: 2/3"
-    >
-      <path d="M 1 0 V 100" stroke="white" stroke-dasharray="4,4"/>
-    </svg> -->
-
-    <div class="space r-7"/>
-    <div style="grid-row: 7/8; grid-column: 2/3; position: relative">
+    <!-- Connection: Settings -> Publish -->
+    <div style="grid-row: 6/8; grid-column: 1/2; position: relative">
       <svg
         height="100%"
+        width="100%"
         viewBox="0 0 100 100"
-        style="position: absolute;"
+        preserveAspectRatio="none"
+        style="position: absolute; padding-top: 24px"
+        class="line"
       >
-        <path d="M 1 0 V 100" stroke="white" stroke-dasharray="4,4"/>
+        <path d="M 49 0 V 100" stroke="white" stroke-dasharray="4,4"/>
+        <path
+          :d="`M 49 0 V ${publish.published ? 100 : 0}`"
+          style="transition: all 0.5s"
+          stroke="white"
+          stroke-width="2"
+        />
+      </svg>
+      <svg
+        v-if="activeItem === settings"
+        height="100%"
+        width="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style="position: absolute; padding-top: 24px"
+        class="line secondary-link"
+      >
+        <path>
+          <animate
+            begin="0.25s"
+            dur="0.3s"
+            attributeName="d"
+            fill="freeze"
+            values="M 100 35 H 100;
+                    M 100 35 H 80;"
+          />
+        </path>
+        <path>
+          <animate
+            begin="0.15s"
+            dur="0.3s"
+            attributeName="d"
+            fill="freeze"
+            values="M 100 60 H 100;
+                    M 100 60 H 80;"
+          />
+        </path>
+        <path>
+          <animate
+            dur="0.75s"
+            attributeName="d"
+            fill="freeze"
+            values="M 100 85 h 0 v 0 v 0 l 0 0;
+                    M 100 85 H 80 v 0 v 0 l 0 0;
+                    M 100 85 H 80 V 35 v 0 l 0 0;
+                    M 100 85 H 80 V 35 V 22 l 0 0;
+                    M 100 85 H 80 V 35 V 22 L 65 8;"
+          />
+        </path>
       </svg>
     </div>
 
-    <v-expand-transition>
-      <v-layout
-        v-if="$route.name === 'settings'"
-        class="r-7 column submenu"
-        style="grid-column: 3/4;"
-      >
-        <v-btn
-          text small dark
-          :to="{name: 'settings', params: {page: 'project'}}"
-          active-class="primary--text"
-          >
-            <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Project
-          </v-btn>
-        <v-btn
-          text small dark
-          :to="{name: 'settings', params: {page: 'layers'}}"
-          active-class="primary--text"
-        >
-          <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Layers
-        </v-btn>
-        <v-btn
-          text small dark
-          :to="{name: 'settings', params: {page: 'topics'}}"
-          active-class="primary--text"
-        >
-          <v-icon small class="mr-1">keyboard_arrow_right</v-icon>Topics
-        </v-btn>
-      </v-layout>
-    </v-expand-transition>
-
-    <icon
-      name="timeline-publish"
-      class="bullet r-8"
-      size="48px"
+    <settings-svg
+      class="bullet r-6"
+      :class="{disabled: settings.disabled, active: activeItem === settings}"
     />
-    <v-btn
-      text dark disabled
-      class="r-8"
-    >
-      Publish
-    </v-btn>
+    <div class="space r-7"/>
 
-    <!-- Left server border -->
+    <publish-svg
+      class="bullet r-8"
+      :class="{disabled: publish.disabled}"
+    />
+
+    <!-- Side server border -->
     <div style="grid-column: 1/2; grid-row: 5/8; position:relative" class="fill-height">
       <svg
-        viewBox="0 0 32 32"
+        viewBox="0 0 100 100"
         height="100%"
         width="100%"
         style="max-height:100%"
         preserveAspectRatio="none"
+        class="line"
       >
         <path
-          d="M 0.5 0 V 31"
-          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.8px"
+          d="M 0.5 0 V 100
+             M 92.5 0 V 100"
+          style="stroke: #00a6e3;
+                 stroke-width: 2;
+                 stroke-linecap: round;
+                 stroke-linejoin: round;
+                 stroke-dasharray: 2.5,3.8"
         />
       </svg>
     </div>
-    <!-- Right server border -->
-    <div style="grid-column: 2/3; grid-row: 5/8; position:relative" class="fill-height">
-      <svg
-        viewBox="0 0 32 32"
-        height="100%"
-        width="100%"
-        style="max-height:100%"
-        preserveAspectRatio="none"
+
+    <!-- Links -->
+    <template v-for="(item, index) in [checkin, files, settings]">
+      <v-btn
+        :key="`link-${index}`"
+        :class="`r-${2 + 2 * index}`"
+        active-class="orange--text"
+        :disabled="item.disabled"
+        :to="item.link"
+        text dark
       >
-        <path
-          d="M 31.5 0 V 31"
-          style="stroke:#00a6e3;stroke-width: 2px;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray: 2.5px,3.8px"
-        />
-      </svg>
-    </div>
+        {{ item.label }}
+      </v-btn>
+      <v-expand-transition
+        v-if="item.sublinks"
+        :key="`sublink-${index}`"
+        :duration="1000"
+      >
+        <v-layout
+          v-if="activeItem === item"
+          class="column submenu"
+          :class="`r-${3 + 2 * index}`"
+          style="grid-column: 2/3;"
+        >
+          <v-btn
+            v-for="link in item.sublinks"
+            :key="link.page"
+            :to="{name: item.link.name, params: {page: link.page}}"
+            active-class="orange--text"
+            text small dark
+          >
+            <v-icon small class="mr-1">keyboard_arrow_right</v-icon>
+            {{ link.label }}
+          </v-btn>
+        </v-layout>
+      </v-expand-transition>
+    </template>
+
+    <v-btn
+      text dark
+      class="r-8"
+      :disabled="publish.disabled"
+      @click="$emit('publish')"
+    >
+      {{ publish.label }}
+    </v-btn>
 
     <icon
       name="timeline-browsers"
       class="browsers"
+      style="opacity: 0.5"
       size="64px"
     />
   </div>
 </template>
+
 <script>
+import CheckinSvg from '@/assets/inline/timeline-checkin.svg'
+import FilesSvg from '@/assets/inline/timeline-files.svg'
+import SettingsSvg from '@/assets/inline/timeline-settings.svg'
+import PublishSvg from '@/assets/inline/timeline-publish.svg'
+import DesktopSvg from '@/assets/inline/desktop-qgis.svg'
+
+
 export default {
-  
+  name: 'timeline',
+  components: { CheckinSvg, FilesSvg, SettingsSvg, PublishSvg, DesktopSvg },
+  props: {
+    checkin: {
+      type: Object,
+      default: () => ({
+        disabled: true,
+        label: 'Check-in'
+      })
+    },
+    files: {
+      type: Object,
+      default: () => ({
+        label: 'Files'
+      })
+    },
+    settings: {
+      type: Object,
+      default: () => ({
+        label: 'Settings'
+      })
+    },
+    publish : {
+      type: Object,
+      default: () => ({
+        label: 'Publish'
+      })
+    },
+    visited: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  computed: {
+    links () {
+      return [this.checkin, this.files, this.settings]
+    },
+    activeItem () {
+      return this.links.find(i => i && !i.disabled && i.link && this.$route.name === i.link.name)
+    }
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .timeline {
   display: grid;
-  grid-template-columns: 64px 64px 1fr;
+  grid-template-columns: 128px 1fr;
 
-  .desktop {
-    grid-column: 1 / 3;
-  }
   .bullet {
-    grid-column: 1 / 3;
+    grid-column: 1 / 2;
     position: relative;
+
+    #bg {
+      transition: all 0.5s;
+      stroke-dasharray: none;
+      stroke: transparent;
+      stroke-width: 0;
+      stroke: #ff9800;
+      vector-effect: non-scaling-stroke;
+    }
+    &.active {
+      #bg {
+        // fill: #f5a630;
+        stroke-width: 2px;
+      }
+    }
   }
   .v-btn {
-    grid-column: 3 / 4;
+    grid-column: 2 / 3;
     margin: 6px 12px;
+    &.v-btn--active::before {
+      // display: none;
+      opacity: 0.12;
+    }
     ::v-deep .v-btn__content {
       display: inline;
       text-align: left;
@@ -215,14 +366,28 @@ export default {
       }
     }
   }
-  .browsers {
-    // grid-row: 9 / 10;
-    grid-column: 1 / 3;
-  }
-  path {
-    fill: none;
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
+  svg {
+    &.line path {
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+    &.secondary-link {
+      stroke: #ff9800;
+      stroke-dasharray: 4,1;
+    }
+    .progress-line {
+      transition: all 0.5s;
+      stroke: white;
+      stroke-width: 2;
+    }
+    #mask {
+      fill: #444;
+      fill-opacity: 0;
+      transition: all 0.5s;
+    }
+    &.disabled #mask {
+      fill-opacity: 0.6;
+    }
   }
 }
 .r-1 {
@@ -248,6 +413,10 @@ export default {
 }
 .space {
   height: 20px;
-  grid-column: 1 / 4;
+  grid-column: 1 / 3;
+}
+.expand-transition-enter-active,
+.expand-transition-leave-active {
+  transition-duration: 0.6s
 }
 </style>

@@ -3,7 +3,6 @@
     <portal to="menu-breadcrumbs" v-if="pageVisible && projectConfig">
       <v-icon>keyboard_arrow_right</v-icon>
       <v-btn text color="orange" style="text-transform:none">
-        <v-icon class="mr-1">map</v-icon>
         {{ projectConfig.title }}
       </v-btn>
     </portal>
@@ -13,7 +12,26 @@
     </portal>
 
     <v-layout class="column mr-2 py-2 left-panel mt-2 elevation-3">
-      <timeline/>
+      <timeline
+        :files="{
+          label: 'Files',
+          link: {name: 'files'}
+        }"
+        :settings="{
+          label: 'Settings',
+          link: {name: 'settings'},
+          activeClass: 'primary--text',
+          sublinks: [
+            {label: 'Project', page: 'project'},
+            {label: 'Layers', page: 'layers'},
+            {label: 'Topics', page: 'topics'}
+          ]
+        }"
+        :publish="{
+          label: 'Update',
+          disabled: true
+        }"
+      />
       <v-spacer/>
     </v-layout>
 
@@ -28,14 +46,13 @@
 <script>
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
-import TimelinePrimaryLink from '@/components/TimelinePrimaryLink'
 import Timeline from '@/components/Timeline'
 import { layersList, filterLayers } from '@/utils'
 
 export default {
   name: 'Project',
   mixins: [ Page ],
-  components: { ProjectMenu, TimelinePrimaryLink, Timeline },
+  components: { ProjectMenu, Timeline },
   props: {
     user: String,
     folder: String,
@@ -85,6 +102,7 @@ export default {
           this.projectConfig = resp.data
         })
         .catch(err => {
+          console.error(err)
           this.projectConfig = null
         })
     },
