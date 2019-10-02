@@ -187,16 +187,19 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		user := r.Context().Value(contextKeyUser).(*User)
 
 		if r.ContentLength > s.config.MaxFileUpload {
+			log.Printf("Upload error: file size is over limit (user: %s)\n", user.Username)
 			http.Error(w, "File size is over limit", http.StatusExpectationFailed)
 			return
 		}
 		ctype, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || ctype != "multipart/form-data" {
+			log.Printf("Upload error: invalid content type (user: %s)\n", user.Username)
 			http.Error(w, "Invalid content type", 400)
 			return
 		}
 		boundary, ok := params["boundary"]
 		if !ok {
+			log.Printf("Upload error: Invalid content type (user: %s)\n", user.Username)
 			http.Error(w, http.ErrMissingBoundary.Error(), 400)
 			return
 		}
@@ -205,25 +208,28 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		reader := multipart.NewReader(r.Body, boundary)
 		part, _ := reader.NextPart()
 		if !strings.HasSuffix(part.FileName(), ".zip") {
+			log.Printf("Upload error: not a zip archive (user: %s, file: %s)\n", user.Username, part.FileName())
 			http.Error(w, "Expected zip archive", 400)
 			return
 		}
 
 		tmpfile, err := ioutil.TempFile("/tmp", part.FileName())
 		if err != nil {
+			log.Printf("Upload error: %s\n", err)
 			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}
 		defer os.Remove(tmpfile.Name())
 		_, err = io.Copy(tmpfile, part)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Upload error: %s\n", err)
 			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}
 		archiveReader, err := zip.OpenReader(tmpfile.Name())
 
 		if err != nil {
+			log.Printf("Upload error: %s\n", err)
 			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}
@@ -231,6 +237,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		// Check archive structure - all files in one root directory, with QGIS project
 		rootFile := archiveReader.File[0]
 		if !rootFile.FileInfo().IsDir() {
+			log.Printf("Upload error: invalid archive structure. Expected single directory. (user: %s)\n", user.Username)
 			http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
 			return
 		}
@@ -238,6 +245,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		hasQgisProject := false
 		for _, f := range archiveReader.File[1:] {
 			if !strings.HasPrefix(f.Name, rootFile.Name) {
+				log.Printf("Upload error: invalid archive structure. Expected single directory. (user: %s)\n", user.Username)
 				http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
 				return
 			}
@@ -246,6 +254,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			}
 		}
 		if !hasQgisProject {
+			log.Printf("Upload error: invalid archive structure. Missing QGIS project. (user: %s)\n", user.Username)
 			http.Error(w, "Invalid archive: missing QGIS project", http.StatusBadRequest)
 			return
 		}
@@ -258,6 +267,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 				err = fs.SaveToFile(fr, dest)
 				fr.Close()
 				if err != nil {
+					log.Printf("Upload error: failed to extract archive. %s (user: %s)\n", err, user.Username)
 					http.Error(w, "FileServer error", http.StatusInternalServerError)
 					return
 				}
