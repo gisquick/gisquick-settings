@@ -258,12 +258,7 @@
       {{ publish.label }}
     </v-btn>
 
-    <icon
-      name="timeline-browsers"
-      class="browsers"
-      style="opacity: 0.5"
-      size="64px"
-    />
+    <browsers-svg style="opacity: 0.6"/>
   </div>
 </template>
 
@@ -273,11 +268,11 @@ import FilesSvg from '@/assets/inline/timeline-files.svg'
 import SettingsSvg from '@/assets/inline/timeline-settings.svg'
 import PublishSvg from '@/assets/inline/timeline-publish.svg'
 import DesktopSvg from '@/assets/inline/desktop-qgis.svg'
-
+import BrowsersSvg from '@/assets/inline/timeline-browsers.svg'
 
 export default {
   name: 'timeline',
-  components: { CheckinSvg, FilesSvg, SettingsSvg, PublishSvg, DesktopSvg },
+  components: { CheckinSvg, FilesSvg, SettingsSvg, PublishSvg, DesktopSvg, BrowsersSvg },
   props: {
     checkin: {
       type: Object,
