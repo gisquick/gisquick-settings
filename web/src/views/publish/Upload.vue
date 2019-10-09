@@ -16,18 +16,39 @@
         </v-btn>
       </template>
     </files-browser>
-    <v-layout class="row toolbar mx-1 my-1">
-      <v-spacer/>
+    <div class="toolbar mx-1 mt-2 mb-1">
+      <div
+        v-if="browser"
+        class="left"
+      >
+        <template v-if="!fetchingLocalFiles && !fetchingServerFiles">
+          <template v-if="browser.newFiles.length + browser.modifiedFiles.length > 0">
+            <small
+              v-show="browser.newFiles.length"
+              class="mx-2 green--text"
+            >
+              New: {{ browser.newFiles.length }}
+            </small>
+            <small
+              v-show="browser.modifiedFiles.length"
+              class="mx-2 orange--text"
+            >
+              Changed: {{ browser.modifiedFiles.length }}
+            </small>
+          </template>
+          <small v-else>No changes detected</small>
+        </template>
+      </div>
       <v-btn
         rounded
         :disabled="fetchingLocalFiles || fetchingServerFiles || uploadProgress !== null"
         @click="uploadFiles"
       >
         <v-icon class="mr-2">cloud_upload</v-icon>
-        <span>Upload</span>
+        <span>{{ dest.length === 0 ? 'Upload' : 'Update' }}</span>
       </v-btn>
       <v-spacer/>
-    </v-layout>
+    </div>
   </v-layout>
 </template>
 
@@ -37,6 +58,7 @@ import FilesBrowser from '@/components/FilesBrowser'
 export default {
   name: 'Upload',
   components: { FilesBrowser },
+  refs: ['filesBrowser'],
   data () {
     return {
       fetchingLocalFiles: false,
@@ -55,6 +77,9 @@ export default {
     },
     projectPath () {
       return this.store.projectPath
+    },
+    browser () {
+      return this.$refs.filesBrowser
     }
   },
   watch: {
@@ -67,6 +92,9 @@ export default {
           this.dest = []
         }
       }
+    },
+    dest (files) {
+      this.store.serverFiles = files
     }
   },
   created () {
@@ -108,7 +136,7 @@ export default {
     },
     uploadFiles () {
       const { newFiles, modifiedFiles } = this.$refs.filesBrowser
-      const files = this.src.files.filter(f => newFiles[f.path] || modifiedFiles[f.path])
+      const files = [...newFiles, ...modifiedFiles]
       const upload = {}
       files.forEach(f => {
         upload[f.path] = {
@@ -156,5 +184,7 @@ export default {
 }
 .toolbar {
   flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
 }
 </style>

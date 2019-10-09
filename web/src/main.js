@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import PortalVue from 'portal-vue'
+import { ReactiveRefs } from 'vue-reactive-refs'
 import http from './http.js'
 import App from './App.vue'
 import Icon from './components/Icon.vue'
@@ -11,6 +12,7 @@ import * as filters from './filters.js'
 Vue.config.productionTip = false
 Vue.use(VueRouter)
 Vue.use(PortalVue)
+Vue.use(ReactiveRefs)
 Vue.component('icon', Icon)
 
 Vue.filter('filesize', filters.formatFileSize)

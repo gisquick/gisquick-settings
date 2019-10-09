@@ -221,22 +221,26 @@ export default {
       if (this.loading) {
         return []
       }
-      const files = this.localFiles.filter(lf => !this.serverFiles.find(sf => sf.path === lf.path))
-      return _keyBy(files, 'path')
+      return this.localFiles.filter(lf => !this.serverFiles.find(sf => sf.path === lf.path))
+    },
+    newFilesMap () {
+      return _keyBy(this.newFiles, 'path')
     },
     modifiedFiles () {
       if (this.loading) {
         return []
       }
-      const files = this.localFiles.filter(lf => this.serverFiles.find(sf => sf.path === lf.path && sf.hash !== lf.hash))
-      return _keyBy(files, 'path')
+      return this.localFiles.filter(lf => this.serverFiles.find(sf => sf.path === lf.path && sf.hash !== lf.hash))
+    },
+    modifiedFilesMap () {
+      return _keyBy(this.modifiedFiles, 'path')
     },
     filesStyles () {
       const styles = {}
       this.localFiles.forEach(f => {
-        if (this.newFiles[f.path]) {
+        if (this.newFilesMap[f.path]) {
           var color = '#689F38'
-        } else if (this.modifiedFiles[f.path]) {
+        } else if (this.modifiedFilesMap[f.path]) {
           color = '#FFA000'
         } else {
           color = '#222'
