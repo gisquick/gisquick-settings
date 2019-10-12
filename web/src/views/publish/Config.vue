@@ -41,12 +41,14 @@ export default {
         project: {
           component: Project,
           props: {
+            layers: this.store.projectInfo.layers,
             config: this.config
           }
         },
         layers: {
           component: LayersView,
           props: {
+            order: this.store.projectInfo.layers.map(l => l.name),
             config: this.config
           }
         },

@@ -37,6 +37,7 @@
             </small>
           </template>
           <small v-else>No changes detected</small>
+          <!-- <span v-if="uploadProgress"> Progress: {{ totalProgress }}%</span> -->
         </template>
       </div>
       <v-btn
@@ -53,7 +54,9 @@
 </template>
 
 <script>
+import _omit from 'lodash/omit'
 import FilesBrowser from '@/components/FilesBrowser'
+import { mapLayers, layersList } from '@/utils.js'
 
 export default {
   name: 'Upload',
@@ -80,6 +83,18 @@ export default {
     },
     browser () {
       return this.$refs.filesBrowser
+    },
+    totalProgress () {
+      if (this.uploadProgress) {
+        let size = 0
+        let uploaded = 0
+        Object.values(this.uploadProgress).forEach(info => {
+          size += info.size
+          uploaded += info.progress * info.size
+        })
+        return uploaded / size
+      }
+      return 0
     }
   },
   watch: {
@@ -166,8 +181,21 @@ export default {
         this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
           .then(() => {
             this.fetchServerFiles()
+
+            const layers = JSON.parse(JSON.stringify(this.config.layers))
+            layersList(layers).forEach(l => {
+              delete l.wfs
+              delete l.source
+              l.publish = true
+            })
             this.store.projectConfig = {
-              ...this.config,
+              ..._omit(this.config, ['layers', 'file', 'directory']),
+              base_layers: [],
+              // overlays: mapLayers(layers, l => _omit(l, ['wfs', 'source'])),
+              overlays: layers,
+              authentication: 'all',
+              use_mapcache: false,
+              selection_color: '#ffff00ff',
               topics: []
             }
           })

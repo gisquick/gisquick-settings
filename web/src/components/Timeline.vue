@@ -243,7 +243,8 @@
             text small dark
           >
             <v-icon small class="mr-1">keyboard_arrow_right</v-icon>
-            {{ link.label }}
+            <span class="grow">{{ link.label }}</span>
+            <v-icon v-if="link.status === 'error'" class="red--text" small>error</v-icon>
           </v-btn>
         </v-layout>
       </v-expand-transition>
@@ -358,6 +359,9 @@ export default {
       text-transform: none;
       &:before {
         display: none;
+      }
+      ::v-deep .v-btn__content {
+        display: flex;
       }
     }
   }

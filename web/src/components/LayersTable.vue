@@ -85,15 +85,21 @@ export default {
         paddingLeft: `${28 * depth}px`,
       }
       const groupNode = (
-        <tr>
+        <tr class={{[this.selectedClass]: item.name === this.selected}}>
           <td
             colspan={this.headers.length + 1}
             class="group-header py-1"
-            onClick={e => this.toggleGroup(item)}
+            onClick={() => this.$emit('click:row', item)}
             key={item.name}
           >
             <v-layout>
-              <v-icon class="mr-1" style={paddingStyle}>{groupIcon}</v-icon>
+              <v-icon
+                class="mr-1"
+                style={paddingStyle}
+                vOn:click_stop={e => this.toggleGroup(item)}
+              >
+                {groupIcon}
+              </v-icon>
               <span>{item.name}</span>
             </v-layout>
           </td>
@@ -155,7 +161,6 @@ export default {
     // box-sizing: border-box;
   }
   .group-header {
-    cursor: pointer;
     user-select: none;
     height: 36px;
     span {

@@ -46,11 +46,8 @@ function roundExtent (extent) {
 export default {
   name: 'ProjectSettings',
   props: {
+    layers: Array,
     config: Object
-  },
-  data () {
-    return {
-    }
   },
   computed: {
     authOpts () {
@@ -68,7 +65,7 @@ export default {
       ]
     },
     layersExtents () {
-      return layersList(this.config.layers)
+      return layersList(this.layers)
         .filter(l => l.extent)
         .map(l => ({
           text: l.name,

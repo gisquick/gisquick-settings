@@ -168,6 +168,9 @@ export default {
         }
       })
       return sources
+    },
+    status () {
+      return 'ok'
     }
   },
   watch: {
@@ -175,6 +178,12 @@ export default {
       immediate: true,
       handler (layers) {
         this.opened = layersGroups(layers).map(l => l.name)
+      }
+    },
+    status: {
+      immediate: true,
+      handler (status) {
+        this.$emit('status', status)
       }
     }
   }

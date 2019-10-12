@@ -15,22 +15,22 @@
           label: '1. Check-in',
           link: { name: 'qgis-project' },
           disabled: !$ws.pluginConnected,
-          done: progress.generalInfo && progress.layersInfo,
+          done: progress.projectValid,
           sublinks: [
-            {label: 'General', page: 'info'},
-            {label: 'Layers', page: 'layers'}
+            {label: 'General', page: 'general', status: checkin.general},
+            {label: 'Layers', page: 'layers', status: checkin.layers}
           ]
         }"
         :files="{
           label: '2. Upload',
           link: {name: 'publish-upload'},
-          disabled: !progress.generalInfo || !progress.layersInfo || !$ws.pluginConnected,
+          disabled: !progress.projectValid || !$ws.pluginConnected,
           done: progress.filesUploaded
         }"
         :settings="{
           label: '3. Settings',
           link: {name: 'publish-config'},
-          disabled: !serverActionsEnabled,
+          disabled: !progress.filesUploaded,
           sublinks: [
             {label: 'Project', page: 'project'},
             {label: 'Layers', page: 'layers'},
@@ -78,11 +78,13 @@ export default {
       projectConfig: null,
       serverFiles: null,
       publishProgress: {
-        generalInfo: false,
-        layersInfo: false,
         published: false
       },
-      visitedLinks: {}
+      visitedLinks: {},
+      checkin: {
+        general: null,
+        layers: null
+      }
     }
   },
   computed: {
@@ -98,23 +100,14 @@ export default {
       }
       return ''
     },
-    serverActionsEnabled () {
-      return this.projectConfig !== null
-      // if (this.projectInfo && this.serverFiles) {
-      //   const projectFile = basename(this.projectInfo.file)
-      //   return this.serverFiles.some(f => f.path === projectFile)
-      // }
-      // return false
-    },
     overlays () {
-      return this.projectConfig && filterLayers(this.projectConfig.layers, l => l.publish)
+      return this.projectConfig && filterLayers(this.projectConfig.overlays, l => l.publish)
     },
     progress () {
-      const { generalInfo, layersInfo, published } = this.publishProgress
+      const { published } = this.publishProgress
       return {
         projectInfo: this.projectInfo !== null,
-        generalInfo,
-        layersInfo,
+        projectValid: this.checkin.general && this.checkin.general !== 'error' && this.checkin.layers && this.checkin.layers !== 'error',
         filesUploaded: this.projectConfig !== null,
         published
       }
@@ -137,7 +130,7 @@ export default {
     // this.$ws.unbind('PluginConnected', this.fetchProjectInfo)
   },
   beforeRouteLeave (to, from, next) {
-    Object.assign(this.$data, this.$options.data())
+    this.resetProjectData()
     next()
   },
   watch: {
@@ -157,49 +150,28 @@ export default {
     }
   },
   methods: {
+    resetProjectData () {
+      Object.assign(this.$data, this.$options.data())
+    },
     onProjectChange () {
-      this.projectInfo = null
-      this.projectConfig = null
-      this.serverFiles = null
+      this.resetProjectData()
       this.$router.push({ name: 'publish' })
       this.fetchProjectInfo()
     },
     fetchProjectInfo () {
       this.$ws.request('ProjectInfo')
         .then(resp => {
-          const config = JSON.parse(resp)
-          layersList(config.layers).forEach(l => {
-            l.publish = true
-            l.hidden = false
-          })
-          Object.assign(config, {
-            base_layers: [],
-            authentication: 'all',
-            use_mapcache: false,
-            selection_color: "#ffff00ff"
-          })
-          this.projectInfo = config
+          this.projectInfo = JSON.parse(resp)
         })
     },
     publish () {
-      const meta = _omit(this.projectConfig, ['file', 'directory'])
-      const overlays = JSON.parse(JSON.stringify(this.overlays))
-      layersList(overlays).forEach(l => {
-        l.queryable = l.wfs
-        delete l.wfs
-        delete l.source
-        delete l.publish
-      })
-      meta.overlays = overlays
-      delete meta.layers
-      
-      Object.assign(meta, {
+      const meta = {
+        ...this.projectConfig,
+        tile_resolutions: scalesToResolutions(this.projectConfig.scales, this.projectConfig.units),
         publish_date: new Date().toUTCString(),
         publish_date_unix: new Date().getTime()/1000|0,
         gislab_user: this.user.username
-      })
-      meta.tile_resolutions = scalesToResolutions(meta.scales, meta.units)
-      console.log(meta)
+      }
       const projFile = this.projectInfo.file
       const metafile = basename(projFile).replace(extname(projFile), ".meta")
       this.$http.post(`/api/project/meta/${this.projectPath}/${metafile}`, meta)

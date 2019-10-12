@@ -60,7 +60,9 @@ export default {
   },
   data () {
     return {
-      projectConfig: null
+      layers: [],
+      projectConfig: null,
+      projectInfo: null
     }
   },
   computed: {
@@ -68,17 +70,11 @@ export default {
       return [this.user, this.folder, this.projectName].join('/')
     },
     overlays () {
-      return this.projectConfig && filterLayers(this.projectConfig.layers, l => l.publish)
+      return this.projectConfig && filterLayers(this.projectConfig.overlays, l => l.publish)
     }
-    // overlayLayers () {
-    //   return this.layers.filter(item => !this.baseLayersNames.includes(item.name))
-    // },
-    // baseLayers () {
-    //   return this.layers.filter(item => this.baseLayersNames.includes(item.name))
-    // }
   },
   watch: {
-    projectName: {
+    projectPath: {
       immediate: true,
       handler (projectName) {
         if (projectName) {
@@ -95,15 +91,21 @@ export default {
       // this.$http.get('/project.json', { params })
       this.$http.get(`/api/project/meta/${this.projectPath}`)
         .then(resp => {
-          resp.data.layers = resp.data.overlays
-          layersList(resp.data.layers).forEach(l => {
-            l.publish = true
-          })
+          // TODO: load projectInfo file when available
+          const layers = [...resp.data.base_layers, ...resp.data.overlays]
+          this.projectInfo = {
+            layers
+          }
+          // resp.data.layers = resp.data.overlays
+          // layersList(resp.data.layers).forEach(l => {
+          //   l.publish = true
+          // })
           this.projectConfig = resp.data
         })
         .catch(err => {
           console.error(err)
           this.projectConfig = null
+          this.projectInfo = null
         })
     },
     saveChanges () {

@@ -49,3 +49,7 @@ export function layersGroups (items) {
   })
   return list
 }
+
+export function mapLayers (items, fn) {
+  return items.map(i => i.layers ? { ...i, layers: mapLayers(i.layers, fn) } : fn(i))
+}

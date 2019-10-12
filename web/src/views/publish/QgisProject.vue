@@ -1,12 +1,11 @@
 <template>
-  <keep-alive>
     <div
       v-if="route"
       :is="route.component"
       v-bind="route.props"
       class="box grow"
+      @status="updateStatus"
     />
-  </keep-alive>
 </template>
 
 <script>
@@ -16,7 +15,7 @@ import LayersInfo from './LayersInfo'
 
 export default {
   name: "QgisProject",
-  mixins: [ DefaultRedirect({ page: 'info' }) ],
+  mixins: [ DefaultRedirect({ page: 'general' }) ],
   computed: {
     store () {
       return this.$parent.$data
@@ -33,7 +32,7 @@ export default {
           },
           validate: 'layersInfo'
         },
-        info: {
+        general: {
           component: GeneralInfo,
           props: {
             config: this.config
@@ -54,6 +53,13 @@ export default {
           this.store.publishProgress[route.validate] = true
         }
       }
+    }
+  },
+  methods: {
+    updateStatus (status) {
+      // this.$emit('status', { route: this.$route.params.page, status })
+      this.store.checkin[this.$route.params.page] = status
+      this.$emit('status', status)
     }
   }
 }

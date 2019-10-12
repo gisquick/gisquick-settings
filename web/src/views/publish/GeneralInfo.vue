@@ -57,6 +57,23 @@ export default {
   computed: {
     scalesText () {
       return this.config.scales.map(s => `1: ${s}`).join(', ')
+    },
+    error () {
+      return this.config.scales.length === 0
+    },
+    status () {
+      if (this.error) {
+        return 'error'
+      }
+      return 'ok'
+    }
+  },
+  watch: {
+    status: {
+      immediate: true,
+      handler (status) {
+        this.$emit('status', status)
+      }
     }
   }
 }

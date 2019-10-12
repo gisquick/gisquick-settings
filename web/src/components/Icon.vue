@@ -34,7 +34,7 @@ export default {
     }
     if (size) {
       style.height = size
-      style.width = 'auto'
+      // style.width = 'auto'
       style.maxWidth = '100%'
     }
     ctx.data.style = style
