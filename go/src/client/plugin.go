@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"fs"
@@ -65,11 +66,11 @@ type pingHandler struct {
 	client *Client
 }
 
-func (h pingHandler) Accept(msg []byte) bool {
+func (h *pingHandler) Accept(msg []byte) bool {
 	return bytes.Compare(msg, []byte("PingPlugin")) == 0
 }
 
-func (h pingHandler) Process(msg []byte) error {
+func (h *pingHandler) Process(msg []byte) error {
 	return h.client.WsConn.WriteMessage(websocket.TextMessage, []byte("PongPlugin"))
 }
 
@@ -77,11 +78,11 @@ type filesHandler struct {
 	client *Client
 }
 
-func (h filesHandler) Accept(msg []byte) bool {
+func (h *filesHandler) Accept(msg []byte) bool {
 	return bytes.Compare(msg, []byte("Files")) == 0
 }
 
-func (h filesHandler) Process(msg []byte) error {
+func (h *filesHandler) Process(msg []byte) error {
 	type filesMsg struct {
 		Directory string    `json:"directory"`
 		Files     []fs.File `json:"files"`
@@ -104,13 +105,21 @@ func (h filesHandler) Process(msg []byte) error {
 
 type uploadHandler struct {
 	client *Client
+	cancel context.CancelFunc
 }
 
-func (h uploadHandler) Accept(msg []byte) bool {
-	return bytes.HasPrefix(msg, []byte("SendFiles:"))
+func (h *uploadHandler) Accept(msg []byte) bool {
+	return bytes.HasPrefix(msg, []byte("SendFiles:")) || bytes.HasPrefix(msg, []byte("AbortUpload"))
 }
 
-func (h uploadHandler) Process(msg []byte) error {
+func (h *uploadHandler) Process(msg []byte) error {
+	if bytes.HasPrefix(msg, []byte("AbortUpload")) {
+		if h.cancel != nil {
+			h.cancel()
+			h.cancel = nil
+		}
+		return nil
+	}
 	type Params struct {
 		Project string    `json:"project"`
 		Files   []fs.File `json:"files"`
@@ -122,70 +131,77 @@ func (h uploadHandler) Process(msg []byte) error {
 		return err
 	}
 
-	readBody, writeBody := io.Pipe()
-	defer readBody.Close()
-
-	writer := multipart.NewWriter(writeBody)
-	errChan := make(chan error, 1)
-
 	go func() {
-		compressRegex := regexp.MustCompile("(?i).*\\.(qgs|svg|json|sqlite|gpkg|geojson)$")
-		defer writeBody.Close()
-		writer.WriteField("changes", string(jsonData))
-		directory := h.client.OnMessageCallback([]byte("projectDirectory"))
+		readBody, writeBody := io.Pipe()
+		defer readBody.Close()
 
-		for _, f := range params.Files {
-			// ext := filepath.Ext(f.Path)
-			useCompression := compressRegex.Match([]byte(f.Path))
-			if useCompression {
-				mh := make(textproto.MIMEHeader)
-				mh.Set("Content-Type", "application/octet-stream")
-				mh.Set("Content-Disposition", fmt.Sprintf("form-data; name=\"%s\"; filename=\"%s.gz\"", f.Path, f.Path))
-				part, _ := writer.CreatePart(mh)
-				gzpart := gzip.NewWriter(part)
-				err := fs.CopyFile(gzpart, filepath.Join(directory, f.Path))
-				gzpart.Close()
-				if err != nil {
-					errChan <- err
-					return
-				}
-			} else {
-				part, err := writer.CreateFormFile(f.Path, f.Path)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				if err = fs.CopyFile(part, filepath.Join(directory, f.Path)); err != nil {
-					errChan <- err
-					return
+		writer := multipart.NewWriter(writeBody)
+		errChan := make(chan error, 1)
+
+		go func() {
+			compressRegex := regexp.MustCompile("(?i).*\\.(qgs|svg|json|sqlite|gpkg|geojson)$")
+			defer writeBody.Close()
+			writer.WriteField("changes", string(jsonData))
+			directory := h.client.OnMessageCallback([]byte("projectDirectory"))
+
+			for _, f := range params.Files {
+				// ext := filepath.Ext(f.Path)
+				useCompression := compressRegex.Match([]byte(f.Path))
+				if useCompression {
+					mh := make(textproto.MIMEHeader)
+					mh.Set("Content-Type", "application/octet-stream")
+					mh.Set("Content-Disposition", fmt.Sprintf("form-data; name=\"%s\"; filename=\"%s.gz\"", f.Path, f.Path))
+					part, _ := writer.CreatePart(mh)
+					gzpart := gzip.NewWriter(part)
+					err := fs.CopyFile(gzpart, filepath.Join(directory, f.Path))
+					gzpart.Close()
+					if err != nil {
+						errChan <- err
+						return
+					}
+				} else {
+					part, err := writer.CreateFormFile(f.Path, f.Path)
+					if err != nil {
+						errChan <- err
+						return
+					}
+					if err = fs.CopyFile(part, filepath.Join(directory, f.Path)); err != nil {
+						errChan <- err
+						return
+					}
 				}
 			}
+			errChan <- writer.Close()
+		}()
+
+		url := fmt.Sprintf("%s/api/project/upload/%s", h.client.Server, params.Project)
+		req, _ := http.NewRequest("POST", url, readBody)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		ctx, cancel := context.WithCancel(context.Background())
+		req = req.WithContext(ctx)
+		h.cancel = cancel
+
+		resp, err := h.client.httpClient.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
-		errChan <- writer.Close()
+		defer resp.Body.Close()
+		h.cancel = nil
+
+		fmt.Println("Status", resp.Status)
+		respData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(string(respData))
+			return
+		}
+		err = <-errChan
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
-
-	url := fmt.Sprintf("%s/api/project/upload/%s", h.client.Server, params.Project)
-	req, err := http.NewRequest("POST", url, readBody)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// token, ok := os.LookupEnv("AUTH")
-	// if ok {
-	// 	req.Header.Set("Authorization", token)
-	// }
-
-	resp, err := h.client.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("Status", resp.Status)
-	respData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(string(respData))
-		return err
-	}
-	return <-errChan
+	return nil
 }
 
 func (c *Client) login() error {
@@ -246,9 +262,9 @@ func (c *Client) Start() error {
 	done := make(chan struct{})
 
 	var messageHandlers []messageHandler
-	messageHandlers = append(messageHandlers, pingHandler{c})
-	messageHandlers = append(messageHandlers, filesHandler{c})
-	messageHandlers = append(messageHandlers, uploadHandler{c})
+	messageHandlers = append(messageHandlers, &pingHandler{c})
+	messageHandlers = append(messageHandlers, &filesHandler{c})
+	messageHandlers = append(messageHandlers, &uploadHandler{client: c})
 
 	go func() {
 		defer close(done)
