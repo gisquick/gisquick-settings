@@ -8,7 +8,7 @@
       :dest-path="projectPath"
       :dest-loading="loadingServerFiles"
       :dest-files="serverFiles"
-      :files-progress="upload"
+      :files-progress="filesUploadProgress"
       class="mb-1"
     >
       <template v-slot:src-toolbar>
@@ -25,13 +25,29 @@
     <div class="toolbar mx-1 my-1">
       <v-spacer/>
       <v-btn
-        rounded
+        v-if="!uploadProgress"
+        key="upload"
         :disabled="!canUpload"
-        @click="startUpload"
+        @click="uploadFiles"
+        rounded
       >
         <v-icon class="mr-2">cloud_upload</v-icon>
         <span>Upload</span>
       </v-btn>
+      <v-btn
+        v-else
+        key="cancel"
+        @click="upload.abort()"
+        rounded
+      >
+        <v-icon class="mr-2">cancel</v-icon>
+        <span>Cancel</span>
+        <v-progress-linear
+          height="3"
+          :value="uploadProgress.totalProgress"
+        />
+      </v-btn>
+
       <v-btn rounded :href="`/api/project/download/${projectPath}`" class="self-align-end">
         <v-icon class="mr-2">archive</v-icon>
         <span>Download</span>
@@ -41,11 +57,13 @@
 </template>
 
 <script>
+import { createUpload } from '@/upload.js'
 import FilesBrowser from '@/components/FilesBrowser'
 
 export default {
   name: 'Files',
   components: { FilesBrowser },
+  refs: ['filesBrowser'],
   props: {
     user: String,
     folder: String,
@@ -58,15 +76,25 @@ export default {
       serverFiles: [],
       loadingServerFiles: false,
       loadingLocalFiles: false,
-      upload: null
+      uploadProgress: null
     }
   },
   computed: {
     projectPath () {
       return this.user && this.folder && `${this.user}/${this.folder}`
     },
+    browser () {
+      return this.$refs.filesBrowser
+    },
     canUpload () {
-      return !this.loadingLocalFiles && !this.loadingServerFiles && this.localFiles.length > 0
+      if (this.browser && !this.loadingLocalFiles && !this.loadingServerFiles) {
+        const { newFiles, modifiedFiles } = this.browser
+        return newFiles && modifiedFiles && newFiles.length + modifiedFiles.length > 0
+      }
+      return false
+    },
+    filesUploadProgress () {
+      return this.uploadProgress && this.uploadProgress.files
     }
   },
   watch: {
@@ -82,43 +110,17 @@ export default {
       }
     }
   },
-  created () {
-    this.$ws.bind('Files', this.onFilesMessage)
-    this.$ws.bind('UploadProgress', this.onProgressMessage)
-  },
-  beforeDestroy () {
-    this.$ws.unbind('Files', this.onFilesMessage)
-    this.$ws.unbind('UploadProgress', this.onProgressMessage)
-  },
   methods: {
-    onFilesMessage (e, msg) {
-      this.loadingLocalFiles = false
-      const data = JSON.parse(msg)
-      this.localFiles = data.files
-      this.localDirectory = data.directory
-    },
-    onProgressMessage(e, msg) {
-      const data = JSON.parse(msg)
-      if (!this.upload) {
-        return
-      }
-      Object.entries(data).forEach(([file, progress]) => {
-        const fileUpload = this.upload[file]
-        if (fileUpload) {
-          fileUpload.progress = 100 * (progress / fileUpload.size)
-        }
-      })
-
-      const running = Object.values(this.upload).some(u => u.progress !== 100)
-      if (!running) {
-        this.upload = null
-        this.fetchServerFiles()
-      }
-    },
     fetchLocalFiles () {
       if (this.$ws.pluginConnected) {
         this.loadingLocalFiles = true
-        this.$ws.send('Files')
+        this.$ws.request('Files')
+          .then(resp => {
+            this.loadingLocalFiles = false
+            const data = JSON.parse(resp)
+            this.localFiles = data.files
+            this.localDirectory = data.directory
+          })
       }
     },
     fetchServerFiles () {
@@ -133,19 +135,23 @@ export default {
           this.loadingServerFiles = false
         })
     },
-    startUpload () {
+    async uploadFiles () {
       const { newFiles, modifiedFiles } = this.$refs.filesBrowser
-      // const files = this.localFiles.filter(f => newFiles[f.path] || modifiedFiles[f.path])
-      const files = this.localFiles.filter(f => newFiles[f.path])
-      const upload = {}
-      files.forEach(f => {
-        upload[f.path] = {
-          size: f.size,
-          progress: 0
+      const files = [...newFiles, ...modifiedFiles]
+      // const files = newFiles
+
+      this.upload = createUpload(this.$ws, files, this.projectPath)
+      this.uploadProgress = this.upload.info
+      try {
+        await this.upload.start()
+      } catch (e) {
+        if (e !== 'aborted') {
+          console.error(e)
         }
-      })
-      this.upload = upload
-      this.$ws.sendJSON('SendFiles', { files, project: this.projectPath })
+      } finally {
+        this.fetchServerFiles()
+        this.uploadProgress = null
+      }
     }
   }
 }
@@ -167,6 +173,13 @@ export default {
       justify-self: center;
       &:last-child {
         justify-self: end;
+      }
+    }
+    .v-btn {
+      .v-progress-linear {
+        position: absolute;
+        width: 100%;
+        bottom: -3px;
       }
     }
   }

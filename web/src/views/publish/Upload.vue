@@ -8,7 +8,7 @@
       :dest-path="projectPath"
       :dest-loading="fetchingServerFiles"
       :dest-files="dest"
-      :files-progress="uploadProgress"
+      :files-progress="filesUploadProgress"
     >
       <template v-slot:dest-toolbar>
         <v-btn icon @click="fetchServerFiles">
@@ -37,16 +37,30 @@
             </small>
           </template>
           <small v-else>No changes detected</small>
-          <!-- <span v-if="uploadProgress"> Progress: {{ totalProgress }}%</span> -->
         </template>
       </div>
       <v-btn
-        rounded
-        :disabled="fetchingLocalFiles || fetchingServerFiles || uploadProgress !== null"
+        v-if="!uploadProgress"
+        key="upload"
+        :disabled="fetchingLocalFiles || fetchingServerFiles"
         @click="uploadFiles"
+        rounded
       >
         <v-icon class="mr-2">cloud_upload</v-icon>
         <span>{{ dest.length === 0 ? 'Upload' : 'Update' }}</span>
+      </v-btn>
+      <v-btn
+        v-else
+        key="cancel"
+        @click="upload.abort()"
+        rounded
+      >
+        <v-icon class="mr-2">cancel</v-icon>
+        <span>Cancel</span>
+        <v-progress-linear
+          height="3"
+          :value="uploadProgress.totalProgress"
+        />
       </v-btn>
       <v-spacer/>
     </div>
@@ -57,6 +71,7 @@
 import _omit from 'lodash/omit'
 import FilesBrowser from '@/components/FilesBrowser'
 import { mapLayers, layersList } from '@/utils.js'
+import { createUpload } from '@/upload.js'
 
 export default {
   name: 'Upload',
@@ -84,17 +99,8 @@ export default {
     browser () {
       return this.$refs.filesBrowser
     },
-    totalProgress () {
-      if (this.uploadProgress) {
-        let size = 0
-        let uploaded = 0
-        Object.values(this.uploadProgress).forEach(info => {
-          size += info.size
-          uploaded += info.progress * info.size
-        })
-        return uploaded / size
-      }
-      return 0
+    filesUploadProgress () {
+      return this.uploadProgress && this.uploadProgress.files
     }
   },
   watch: {
@@ -111,13 +117,6 @@ export default {
     dest (files) {
       this.store.serverFiles = files
     }
-  },
-  created () {
-    this.$ws.bind('UploadProgress', this.onProgressMessage)
-    // this.fetchFiles()
-  },
-  beforeDestroy () {
-    this.$ws.unbind('UploadProgress', this.onProgressMessage)
   },
   activated () {
     this.fetchFiles()
@@ -149,56 +148,49 @@ export default {
           this.fetchingServerFiles = false
         })
     },
-    uploadFiles () {
+    saveConfig () {
+      this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
+        .then(() => {
+          this.fetchServerFiles()
+
+          const layers = JSON.parse(JSON.stringify(this.config.layers))
+          layersList(layers).forEach(l => {
+            delete l.wfs
+            delete l.source
+            l.publish = true
+          })
+          this.store.projectConfig = {
+            ..._omit(this.config, ['layers', 'file', 'directory']),
+            base_layers: [],
+            // overlays: mapLayers(layers, l => _omit(l, ['wfs', 'source'])),
+            overlays: layers,
+            authentication: 'all',
+            use_mapcache: false,
+            selection_color: '#ffff00ff',
+            topics: []
+          }
+        })
+    },
+    async uploadFiles () {
       const { newFiles, modifiedFiles } = this.$refs.filesBrowser
       const files = [...newFiles, ...modifiedFiles]
-      const upload = {}
-      files.forEach(f => {
-        upload[f.path] = {
-          size: f.size,
-          progress: 0
-        }
-      })
-      this.uploadProgress = upload
-      this.$ws.sendJSON('SendFiles', { files, project: this.projectPath })
-    },
-    onProgressMessage(e, msg) {
-      const data = JSON.parse(msg)
-      if (!this.uploadProgress) {
+      if (files.length === 0) {
+        this.saveConfig()
         return
       }
-      Object.entries(data).forEach(([file, progress]) => {
-        const fileUpload = this.uploadProgress[file]
-        if (fileUpload) {
-          fileUpload.progress = 100 * (progress / fileUpload.size)
+
+      this.upload = createUpload(this.$ws, files, this.projectPath)
+      this.uploadProgress = this.upload.info
+      try {
+        await this.upload.start()
+        this.saveConfig()
+      } catch (e) {
+        if (e !== 'aborted') {
+          console.error(e)
         }
-      })
-
-      const running = Object.values(this.uploadProgress).some(u => u.progress !== 100)
-      if (!running) {
+        this.fetchServerFiles()
+      } finally {
         this.uploadProgress = null
-        // this.$ws.sendJSON('SaveProjectConfig', { project: this.projectPath, config: this.config })
-        this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
-          .then(() => {
-            this.fetchServerFiles()
-
-            const layers = JSON.parse(JSON.stringify(this.config.layers))
-            layersList(layers).forEach(l => {
-              delete l.wfs
-              delete l.source
-              l.publish = true
-            })
-            this.store.projectConfig = {
-              ..._omit(this.config, ['layers', 'file', 'directory']),
-              base_layers: [],
-              // overlays: mapLayers(layers, l => _omit(l, ['wfs', 'source'])),
-              overlays: layers,
-              authentication: 'all',
-              use_mapcache: false,
-              selection_color: '#ffff00ff',
-              topics: []
-            }
-          })
       }
     }
   }
@@ -214,5 +206,12 @@ export default {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
+  .v-btn {
+    .v-progress-linear {
+      position: absolute;
+      width: 100%;
+      bottom: -3px;
+    }
+  }
 }
 </style>
