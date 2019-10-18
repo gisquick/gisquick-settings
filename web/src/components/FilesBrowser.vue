@@ -42,7 +42,7 @@
             dense
           >
             <template v-slot:label="{ item, open }">
-              <v-layout :style="filesStyles[item.path]">
+              <v-layout :style="item.children ? dirsStyles[item.path] : filesStyles[item.path]">
                 <v-icon v-if="item.children">
                   {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
                 </v-icon>
@@ -130,7 +130,9 @@
 import Path from 'path'
 import { dirname, basename, extname } from 'path'
 import _keyBy from 'lodash/keyBy'
+import _mapValues from 'lodash/mapValues'
 import PluginDisconnected from '@/components/PluginDisconnected'
+
 
 function compareFilenames (a, b) {
   const depthA = a.path.split(Path.sep).length
@@ -151,7 +153,7 @@ function filesTree (files) {
       parts.forEach(name => {
         let node = parent.children.find(i => i.name === name)
         if (!node) {
-          node = {name: name, children: []}
+          node = { name: name, children: [], path: dir }
           parent.children.push(node)
         }
         parent = node
@@ -248,6 +250,30 @@ export default {
         styles[f.path] = { color }
       })
       return styles
+    },
+    dirsInfo () {
+      const dirsInfo = {}
+      const groupInfo = item => {
+        if (item.children) {
+          // compute nested groupInfo first
+          item.children.filter(i => i.children).forEach(groupInfo)
+
+          const isNew = item.children.every(i => i.children ? dirsInfo[i.path].isNew : this.newFilesMap[i.path])
+          const isMod = !isNew && item.children.some(
+            i => i.children
+            ? dirsInfo[i.path].isNew || dirsInfo[i.path].isMod
+            : this.modifiedFilesMap[i.path] || this.newFilesMap[i.path]
+          )
+          dirsInfo[item.path] = { isNew, isMod }
+        }
+      }
+      this.localFilesTree.filter(item => item.children).forEach(groupInfo)
+      return dirsInfo
+    },
+    dirsStyles () {
+      return _mapValues(this.dirsInfo, gi => ({
+        color: gi.isNew ? '#689F38' : gi.isMod ? '#FFA000' : '#222'
+      }))
     }
   }
 }
