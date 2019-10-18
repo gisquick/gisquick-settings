@@ -15,10 +15,9 @@ import (
 	"net/http/cookiejar"
 	"net/textproto"
 	"net/url"
-	"os"
-	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -31,7 +30,7 @@ type Client struct {
 	Password          string
 	httpClient        *http.Client
 	WsConn            *websocket.Conn
-	interrupt         chan os.Signal
+	interrupt         chan int
 	OnMessageCallback func([]byte) string
 }
 
@@ -58,7 +57,7 @@ func (c *Client) SendJSONMessage(msgType string, data interface{}) error {
 }
 
 type messageHandler interface {
-	Accept(msg []byte) bool
+	Accept(msgType string) bool
 	Process(msg []byte) error
 }
 
@@ -66,8 +65,8 @@ type pingHandler struct {
 	client *Client
 }
 
-func (h *pingHandler) Accept(msg []byte) bool {
-	return bytes.Compare(msg, []byte("PingPlugin")) == 0
+func (h *pingHandler) Accept(msgType string) bool {
+	return msgType == "PingPlugin"
 }
 
 func (h *pingHandler) Process(msg []byte) error {
@@ -78,8 +77,8 @@ type filesHandler struct {
 	client *Client
 }
 
-func (h *filesHandler) Accept(msg []byte) bool {
-	return bytes.Compare(msg, []byte("Files")) == 0
+func (h *filesHandler) Accept(msgType string) bool {
+	return msgType == "Files"
 }
 
 func (h *filesHandler) Process(msg []byte) error {
@@ -88,10 +87,14 @@ func (h *filesHandler) Process(msg []byte) error {
 		Files     []fs.File `json:"files"`
 	}
 
-	directory := h.client.OnMessageCallback([]byte("projectDirectory"))
+	directory := h.client.OnMessageCallback([]byte("ProjectDirectory"))
 	files, err := fs.ListDir(directory)
+
 	if err != nil {
 		return err
+	}
+	for i, f := range *files {
+		(*files)[i].Path = filepath.ToSlash(f.Path)
 	}
 	resp := filesMsg{Directory: directory, Files: *files}
 	if err = h.client.SendJSONMessage("Files", resp); err != nil {
@@ -108,8 +111,8 @@ type uploadHandler struct {
 	cancel context.CancelFunc
 }
 
-func (h *uploadHandler) Accept(msg []byte) bool {
-	return bytes.HasPrefix(msg, []byte("SendFiles:")) || bytes.HasPrefix(msg, []byte("AbortUpload"))
+func (h *uploadHandler) Accept(msgType string) bool {
+	return msgType == "SendFiles" || msgType == "AbortUpload"
 }
 
 func (h *uploadHandler) Process(msg []byte) error {
@@ -142,10 +145,11 @@ func (h *uploadHandler) Process(msg []byte) error {
 			compressRegex := regexp.MustCompile("(?i).*\\.(qgs|svg|json|sqlite|gpkg|geojson)$")
 			defer writeBody.Close()
 			writer.WriteField("changes", string(jsonData))
-			directory := h.client.OnMessageCallback([]byte("projectDirectory"))
+			directory := h.client.OnMessageCallback([]byte("ProjectDirectory"))
 
 			for _, f := range params.Files {
 				// ext := filepath.Ext(f.Path)
+				fileOsPath := filepath.FromSlash(f.Path)
 				useCompression := compressRegex.Match([]byte(f.Path))
 				if useCompression {
 					mh := make(textproto.MIMEHeader)
@@ -153,7 +157,7 @@ func (h *uploadHandler) Process(msg []byte) error {
 					mh.Set("Content-Disposition", fmt.Sprintf("form-data; name=\"%s\"; filename=\"%s.gz\"", f.Path, f.Path))
 					part, _ := writer.CreatePart(mh)
 					gzpart := gzip.NewWriter(part)
-					err := fs.CopyFile(gzpart, filepath.Join(directory, f.Path))
+					err := fs.CopyFile(gzpart, filepath.Join(directory, fileOsPath))
 					gzpart.Close()
 					if err != nil {
 						errChan <- err
@@ -165,7 +169,7 @@ func (h *uploadHandler) Process(msg []byte) error {
 						errChan <- err
 						return
 					}
-					if err = fs.CopyFile(part, filepath.Join(directory, f.Path)); err != nil {
+					if err = fs.CopyFile(part, filepath.Join(directory, fileOsPath)); err != nil {
 						errChan <- err
 						return
 					}
@@ -185,17 +189,27 @@ func (h *uploadHandler) Process(msg []byte) error {
 		resp, err := h.client.httpClient.Do(req)
 		if err != nil {
 			fmt.Println(err)
+			h.client.WsConn.WriteMessage(websocket.TextMessage, []byte("UploadError"))
 			return
 		}
 		defer resp.Body.Close()
 		h.cancel = nil
 
-		fmt.Println("Status", resp.Status)
+		fmt.Println("Status", resp.StatusCode)
+
 		respData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println(string(respData))
-			return
+			fmt.Println(err)
 		}
+		if resp.StatusCode >= 400 {
+			fmt.Println("Send UploadError")
+			msg := fmt.Sprintf("UploadError:%s", respData)
+			err = h.client.WsConn.WriteMessage(websocket.TextMessage, []byte(msg))
+			if err != nil {
+				fmt.Printf("Failed to send error message: %s\n", err)
+			}
+		}
+		fmt.Println(string(respData))
 		err = <-errChan
 		if err != nil {
 			fmt.Println(err)
@@ -235,8 +249,7 @@ func (c *Client) Start() error {
 	}
 	defer c.logout()
 
-	c.interrupt = make(chan os.Signal, 1)
-	signal.Notify(c.interrupt, os.Interrupt)
+	c.interrupt = make(chan int, 1)
 
 	u, _ := url.Parse(c.Server)
 	if u.Scheme == "https" {
@@ -276,9 +289,11 @@ func (c *Client) Start() error {
 				log.Println("read:", err)
 				return
 			}
+			strMsg := string(message)
 			log.Printf("recv: %s", message)
+			msgType := strings.SplitN(strMsg, ":", 2)[0]
 			for _, h := range messageHandlers {
-				if h.Accept(message) {
+				if h.Accept(msgType) {
 					if err := h.Process(message); err != nil {
 						fmt.Println(err)
 					}
@@ -286,7 +301,9 @@ func (c *Client) Start() error {
 				}
 			}
 			// possible issue if executed in different thread?
-			c.OnMessageCallback(message)
+			resp := c.OnMessageCallback(message)
+			reply := fmt.Sprintf("%s:%s", msgType, resp)
+			c.WsConn.WriteMessage(websocket.TextMessage, []byte(reply))
 		}
 	}()
 
@@ -318,5 +335,5 @@ func (c *Client) Start() error {
 
 // Stop export
 func (c *Client) Stop() {
-	c.interrupt <- os.Interrupt
+	c.interrupt <- 1
 }
