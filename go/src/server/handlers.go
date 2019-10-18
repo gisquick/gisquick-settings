@@ -2,7 +2,9 @@ package server
 
 import (
 	"archive/zip"
+	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"fs"
 	"html/template"
@@ -29,7 +31,7 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := user.Username
-		fmt.Printf("Plugin WS: %s\n", username)
+		log.Printf("Plugin WS: %s\n", username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -69,7 +71,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 
-		fmt.Printf("App WS: %s\n", user.Username)
+		log.Printf("App WS: %s\n", user.Username)
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -84,9 +86,12 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 				log.Println(err)
 				break
 			}
+			if bytes.Compare(msg, []byte("Ping")) == 0 {
+				srcConn.WriteMessage(websocket.TextMessage, []byte("Pong"))
+				continue
+			}
 
 			if pluginWs := s.pluginsWs.Get(user.Username); pluginWs != nil {
-				// Write message back to browser
 				if err = pluginWs.WriteMessage(msgType, msg); err != nil {
 					break // or better reply with error message?
 				}
@@ -123,6 +128,9 @@ func (s *Server) handleUpload() http.HandlerFunc {
 		File     string `json:"file"`
 		Progress int    `json:"progress"`
 	}
+	type uploadInfo struct {
+		Files []fs.File `json:"files"`
+	}
 
 	projectsDir := s.config.ProjectsDirectory
 
@@ -141,10 +149,35 @@ func (s *Server) handleUpload() http.HandlerFunc {
 			return
 		}
 
+		user := r.Context().Value(contextKeyUser).(*User)
+		if !user.IsSuperuser {
+			r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileUpload)
+		}
 		reader := multipart.NewReader(r.Body, boundary)
+
+		// first part should contain upload info
+		var info uploadInfo
 		part, err := reader.NextPart()
-		meta, err := ioutil.ReadAll(part)
-		fmt.Printf("Payload: %s", meta)
+		if err != nil {
+			log.Printf("Invalid upload stream: %s\n", err)
+			http.Error(w, "Invalid upload stream", http.StatusBadRequest)
+			return
+		}
+		err = json.NewDecoder(part).Decode(&info)
+		if err != nil {
+			log.Printf("Failed to decode upload metadata: %s\n", err)
+			http.Error(w, "Invalid upload stream", http.StatusBadRequest)
+			return
+		}
+		var totalUploadSize int64
+		for _, f := range info.Files {
+			totalUploadSize += f.Size
+		}
+		if !user.IsSuperuser && totalUploadSize > s.config.MaxFileUpload*3 {
+			http.Error(w, "Upload size is over limit", http.StatusBadRequest)
+			return
+		}
+
 		uploadProgress := make(map[string]int)
 		lastNotification := time.Now()
 		for {
@@ -204,7 +237,9 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileUpload)
+		if !user.IsSuperuser {
+			r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileUpload)
+		}
 		reader := multipart.NewReader(r.Body, boundary)
 		part, _ := reader.NextPart()
 		if !strings.HasSuffix(part.FileName(), ".zip") {
@@ -331,6 +366,11 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 }
 
 func (s *Server) handleSaveConfig() http.HandlerFunc {
+	type Config struct {
+		File string `json:"file"`
+	}
+	var maxBodySize int64 = 1024 * 1024
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := chi.URLParam(r, "user")
@@ -339,9 +379,42 @@ func (s *Server) handleSaveConfig() http.HandlerFunc {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", "project.json")
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Invalid data", http.StatusBadRequest)
+			return
+		}
 		defer r.Body.Close()
-		fs.SaveToFile(r.Body, dest)
+
+		var conf Config
+		err = json.Unmarshal(data, &conf)
+		if err != nil {
+			http.Error(w, "Invalid data", http.StatusBadRequest)
+			return
+		}
+
+		projectPath := filepath.Base(conf.File)
+		filename := strings.TrimSuffix(projectPath, filepath.Ext(projectPath)) + ".json"
+		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", filename)
+		err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
+		if err != nil {
+			http.Error(w, "FileServer Error", http.StatusInternalServerError)
+			return
+		}
+		err = ioutil.WriteFile(dest, data, 0644)
+		if err != nil {
+			log.Printf("Failed to save config file: %s\n", err.Error())
+			http.Error(w, "FileServer Error", http.StatusInternalServerError)
+			return
+		}
+		/*
+			// pretty JSON
+			var out bytes.Buffer
+			err = json.Indent(&out, data, "", "  ")
+			ioutil.WriteFile(dest, out.Bytes(), 0644)
+		*/
+
 		w.Write([]byte(""))
 	}
 }
@@ -358,7 +431,20 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 		}
 		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, filename)
 		defer r.Body.Close()
-		fs.SaveToFile(r.Body, dest)
+
+		data, _ := ioutil.ReadAll(r.Body)
+		var out bytes.Buffer
+		if err := json.Indent(&out, data, "", "  "); err != nil {
+			log.Printf("Failed to format project metadata: %s\n", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		if err := ioutil.WriteFile(dest, out.Bytes(), 0644); err != nil {
+			log.Printf("Failed to save project metadata: %s\n", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		// fs.SaveToFile(r.Body, dest)
 		w.Write([]byte(""))
 	}
 }
@@ -399,6 +485,7 @@ func (s *Server) handleGetProjectMeta() http.HandlerFunc {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		http.ServeFile(w, r, filepath.Join(root, matchedFilename))
 	}
 }

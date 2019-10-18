@@ -20,8 +20,12 @@ type Config struct {
 
 // User export
 type User struct {
-	Username string `json:"username"`
-	IsGuest  bool   `json:"is_guest"`
+	Username    string `json:"username"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	Email       string `json:"email"`
+	IsGuest     bool   `json:"is_guest"`
+	IsSuperuser bool   `json:"is_superuser"`
 }
 
 /* Structure for managing websocket connections for concurrent access */
