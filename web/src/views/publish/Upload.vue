@@ -187,6 +187,7 @@ export default {
       } catch (e) {
         if (e !== 'aborted') {
           console.error(e)
+          this.$notification.error(e)
         }
         this.fetchServerFiles()
       } finally {

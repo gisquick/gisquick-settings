@@ -39,11 +39,16 @@ export function createUpload (ws, files, project) {
     }
   }
 
+  function onErrorMessage (e, msg) {
+    task.reject(msg.trim())
+  }
+
   return {
     info,
     start (onProgress) {
       return new Promise((resolve, reject) => {
         ws.bind('UploadProgress', onProgressMessage)
+        ws.bind('UploadError', onErrorMessage)
         ws.sendJSON('SendFiles', { files, project })
         task = {
           resolve,
@@ -55,6 +60,7 @@ export function createUpload (ws, files, project) {
     abort () {
       if (task) {
         ws.unbind('UploadProgress', onProgressMessage)
+        ws.unbind('UploadError', onErrorMessage)
         task.reject('aborted')
         ws.sendJSON('AbortUpload', { project })
         task = null
