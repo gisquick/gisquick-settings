@@ -14,29 +14,13 @@
           :key="index"
           :class="{ 'v-list-item--active': selectedIndex === index}"
           @click="selectedIndex = index"
-          @dblclick="editable = topic"
           :ripple="false"
         >
           <v-list-item-content>
             <span
-              v-if="topic !== editable"
               v-text="topic.title"
               @click="selectedIndex = index"
-              @dblclick="editable = topic"
             />
-            <input
-              v-else
-              v-model="topic.title"
-              @blur="editable = null"
-              outlined
-              hide-details
-            />
-            <!-- <v-text-field
-              :disabled="topic !== editable"
-              v-model="topic.title"
-              @blur="editable = null"
-              hide-details
-            /> -->
           </v-list-item-content>
         </v-list-item>
       </v-list>
@@ -52,33 +36,39 @@
         </v-btn>
       </v-toolbar>
     </v-layout>
-    <v-layout class="column box abstract px-2 py-2">
-      <h3>Description</h3>
-      <v-textarea
-        :disabled="!activeTopic"
-        :value="activeTopic && activeTopic.abstract"
-        @input="activeTopic.abstract = $event"
-        class="pt-0"
-        hide-details
-      />
-    </v-layout>
-    <v-layout class="column box layers px-2 py-2">
-      <h3>Layers</h3>
-      <v-treeview
-        v-if="activeTopic"
-        :items="layers"
-        item-key="name"
-        item-children="layers"
-        item-disabled="hidden"
-        selectable
-        v-model="activeTopic.visible_overlays"
-        selected-color="grey darken-3"
-        dense
-      >
-        <template v-slot:label="{ item }">
-          <span>{{ item.title || item.name }}</span>
-        </template>
-      </v-treeview>
+    <v-layout class="form box px-2 py-2">
+      <v-layout column v-if="activeTopic">
+        <v-text-field
+          label="Title"
+          v-model="activeTopic.title"
+        />
+        <v-textarea
+          label="Description"
+          v-model="activeTopic.abstract"
+          placeholder=" "
+          rows="2"
+          auto-grow
+        />
+        <label>
+          <small>Layers</small>
+        </label>
+        <v-treeview
+          v-if="activeTopic"
+          :items="layers"
+          item-key="name"
+          item-children="layers"
+          item-disabled="hidden"
+          selectable
+          v-model="activeTopic.visible_overlays"
+          selected-color="grey darken-3"
+          dense
+        >
+          <template v-slot:label="{ item }">
+            <span>{{ item.title || item.name }}</span>
+          </template>
+        </v-treeview>
+      </v-layout>
+      <label v-else>No topic is selected</label>
     </v-layout>
   </div>
 </template>
@@ -92,8 +82,7 @@ export default {
   },
   data () {
     return {
-      selectedIndex: 0,
-      editable: null
+      selectedIndex: 0
     }
   },
   computed: {
@@ -121,7 +110,7 @@ export default {
 .topics {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   // max-height: 100%;
   .v-toolbar {
     grid-row: 1 / 2;
@@ -135,19 +124,20 @@ export default {
       padding: 0;
     }
   }
-  .abstract {
+  .form {
     grid-row: 2 / 3;
     grid-column: 2 / 3;
-    margin-bottom: 4px;
-  }
-  .layers {
-    grid-row: 3 / 4;
-    grid-column: 2 / 3;
     overflow: auto;
+    .v-input {
+      flex-grow: 0;
+    }
   }
   .box {
     border: 1px solid #ccc;
     border-radius: 3px;
+  }
+  label {
+    opacity: 0.75;
   }
 }
 .v-list {
