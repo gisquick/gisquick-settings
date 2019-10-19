@@ -33,7 +33,7 @@ func Checksum(path string) (string, error) {
 }
 
 // ListDir export
-func ListDir(root string) (*[]File, error) {
+func ListDir(root string, checksum bool) (*[]File, error) {
 	var files []File = []File{}
 
 	root, _ = filepath.Abs(root)
@@ -42,11 +42,12 @@ func ListDir(root string) (*[]File, error) {
 			return err
 		}
 		if !info.IsDir() {
-			hash, err := Checksum(path)
-			if err != nil {
-				return err
+			hash := ""
+			if checksum {
+				if hash, err = Checksum(path); err != nil {
+					return err
+				}
 			}
-			// hash := ""
 			relPath := path[len(root)+1:]
 			if !strings.HasPrefix(relPath, ".gisquick") && !strings.HasSuffix(relPath, "~") {
 				files = append(files, File{relPath, hash, info.Size(), info.ModTime()})

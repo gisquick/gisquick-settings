@@ -110,7 +110,7 @@ func (s *Server) handleProjectFiles() http.HandlerFunc {
 		directory := chi.URLParam(r, "directory")
 
 		projectDir := filepath.Join(projectsDir, username, directory)
-		files, err := fs.ListDir(projectDir)
+		files, err := fs.ListDir(projectDir, true)
 		if err != nil {
 			if os.IsNotExist(err) {
 				http.Error(w, "Project not found", http.StatusNotFound)
@@ -137,6 +137,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
+		projectDir := filepath.Join(projectsDir, username, directory)
 
 		ctype, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || ctype != "multipart/form-data" {
@@ -151,7 +152,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 
 		user := r.Context().Value(contextKeyUser).(*User)
 		if !user.IsSuperuser {
-			r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileUpload)
+			r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxProjectSize)
 		}
 		reader := multipart.NewReader(r.Body, boundary)
 
@@ -169,13 +170,26 @@ func (s *Server) handleUpload() http.HandlerFunc {
 			http.Error(w, "Invalid upload stream", http.StatusBadRequest)
 			return
 		}
-		var totalUploadSize int64
-		for _, f := range info.Files {
-			totalUploadSize += f.Size
-		}
-		if !user.IsSuperuser && totalUploadSize > s.config.MaxFileUpload*3 {
-			http.Error(w, "Upload size is over limit", http.StatusBadRequest)
-			return
+
+		// Check size limit for regular users
+		if !user.IsSuperuser {
+			filesSizeMap := make(map[string]int64)
+			currentFiles, _ := fs.ListDir(projectDir, false)
+			for _, f := range *currentFiles {
+				filesSizeMap[f.Path] = f.Size
+			}
+			for _, f := range info.Files {
+				filesSizeMap[f.Path] = f.Size
+			}
+			var projectSize int64
+			for _, size := range filesSizeMap {
+				projectSize += size
+			}
+			fmt.Printf("Final project size: %d\n", projectSize)
+			if projectSize > s.config.MaxProjectSize {
+				http.Error(w, "Upload size is over limit", http.StatusBadRequest)
+				return
+			}
 		}
 
 		uploadProgress := make(map[string]int)
@@ -203,7 +217,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 					uploadProgress = make(map[string]int)
 				}
 			}}
-			filename := filepath.Join(projectsDir, username, directory, part.FormName())
+			filename := filepath.Join(projectDir, part.FormName())
 			err = fs.SaveToFile(pr, filename)
 			partReader.Close()
 			if err != nil {
@@ -324,24 +338,21 @@ func (s *Server) handleDownload() http.HandlerFunc {
 
 		projectDir := filepath.Join(s.config.ProjectsDirectory, username, directory)
 		projectDir, _ = filepath.Abs(projectDir)
-		err := filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() {
-				part, err := writer.Create(path[len(projectDir)+1:])
-				if err != nil {
-					return err
-				}
-				if err = fs.CopyFile(part, path); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+		files, err := fs.ListDir(projectDir, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("FileServer error: %s", err.Error()), http.StatusInternalServerError)
 			return
+		}
+		for _, f := range *files {
+			part, err := writer.Create(f.Path)
+			if err != nil {
+				http.Error(w, "FileServer error", http.StatusInternalServerError)
+				return
+			}
+			if err = fs.CopyFile(part, filepath.Join(projectDir, f.Path)); err != nil {
+				http.Error(w, "FileServer error", http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 }

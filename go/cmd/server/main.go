@@ -37,9 +37,10 @@ func main() {
 		ProjectsDirectory: os.Getenv("PROJECTS_DIR"),
 		Server:            os.Getenv("SERVER_URL"),
 		MaxFileUpload:     parseFileSize(optEnv("MAX_FILE_UPLOAD", "100M")),
+		MaxProjectSize:    parseFileSize(optEnv("MAX_PROJECT_SIZE", "200M")),
 	}
 
-	s := server.NewServer(config)
+	s := server.NewServer(config, true)
 	syscall.Umask(0)
 	log.Fatal(http.ListenAndServe(":8001", s))
 }

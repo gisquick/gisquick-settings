@@ -88,7 +88,7 @@ func (h *filesHandler) Process(msg []byte) error {
 	}
 
 	directory := h.client.OnMessageCallback([]byte("ProjectDirectory"))
-	files, err := fs.ListDir(directory)
+	files, err := fs.ListDir(directory, true)
 
 	if err != nil {
 		return err

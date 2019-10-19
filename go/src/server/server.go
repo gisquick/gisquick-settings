@@ -16,6 +16,7 @@ type Config struct {
 	ProjectsDirectory string
 	Server            string
 	MaxFileUpload     int64
+	MaxProjectSize    int64
 }
 
 // User export
@@ -113,7 +114,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewServer export
-func NewServer(config Config) *Server {
+func NewServer(config Config, dev bool) *Server {
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -123,6 +124,8 @@ func NewServer(config Config) *Server {
 	s := Server{config, chi.NewRouter(), upgrader, newWebsocketsMap(), newWebsocketsMap()}
 	s.router.Use(middleware.Logger)
 	s.routes()
-	s.devRoutes()
+	if dev {
+		s.devRoutes()
+	}
 	return &s
 }
