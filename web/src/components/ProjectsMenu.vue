@@ -7,21 +7,33 @@
       @change="onChange"
       hidden
     >
-    <v-btn
-      rounded text
-      @click="$refs.input.click()"
-    >
-      <v-icon class="mr-1">cloud_upload</v-icon>
-      <span>Upload</span>
-    </v-btn>
-    <v-btn
-      rounded text
-      active-class="lime--text text--darken-2"
-      :to="{name: 'publish'}"
-    >
-      <v-icon class="mr-1">$vuetify.icons.qgis</v-icon>
-      <span>Publish</span>
-    </v-btn>
+    <v-tooltip bottom>
+      <template v-slot:activator="{ on }">
+        <v-btn
+          v-on="on"
+          rounded text
+          @click="$refs.input.click()"
+        >
+          <v-icon class="mr-1">cloud_upload</v-icon>
+          <span>Upload</span>
+        </v-btn>
+      </template>
+      <span>Upload Zip archive created with plugin </span>
+    </v-tooltip>
+    <v-tooltip bottom>
+      <template v-slot:activator="{ on }">
+        <v-btn
+          v-on="on"
+          rounded text
+          active-class="lime--text text--darken-2"
+          :to="{name: 'publish'}"
+        >
+          <v-icon class="mr-1">$vuetify.icons.qgis</v-icon>
+          <span>Publish</span>
+        </v-btn>
+      </template>
+      <span>Publish directly from QGIS</span>
+    </v-tooltip>
     <v-progress-circular
       v-if="uploading"
       :value="progress"
