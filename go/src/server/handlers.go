@@ -174,9 +174,13 @@ func (s *Server) handleUpload() http.HandlerFunc {
 		// Check size limit for regular users
 		if !user.IsSuperuser {
 			filesSizeMap := make(map[string]int64)
-			currentFiles, _ := fs.ListDir(projectDir, false)
-			for _, f := range *currentFiles {
-				filesSizeMap[f.Path] = f.Size
+			currentFiles, err := fs.ListDir(projectDir, false)
+			if err == nil {
+				for _, f := range *currentFiles {
+					filesSizeMap[f.Path] = f.Size
+				}
+			} else if !os.IsNotExist(err) {
+				log.Printf("Failed to list project files in %s: %s\n", projectDir, err)
 			}
 			for _, f := range info.Files {
 				filesSizeMap[f.Path] = f.Size
@@ -185,7 +189,6 @@ func (s *Server) handleUpload() http.HandlerFunc {
 			for _, size := range filesSizeMap {
 				projectSize += size
 			}
-			fmt.Printf("Final project size: %d\n", projectSize)
 			if projectSize > s.config.MaxProjectSize {
 				http.Error(w, "Upload size is over limit", http.StatusBadRequest)
 				return
