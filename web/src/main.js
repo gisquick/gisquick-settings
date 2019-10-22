@@ -5,6 +5,7 @@ import { ReactiveRefs } from 'vue-reactive-refs'
 import http from './http.js'
 import App from './App.vue'
 import Icon from './components/Icon.vue'
+import Expander from './components/Expander.vue'
 import vuetify from './plugins/vuetify'
 import router from './router.js'
 import * as filters from './filters.js'
@@ -14,6 +15,7 @@ Vue.use(VueRouter)
 Vue.use(PortalVue)
 Vue.use(ReactiveRefs)
 Vue.component('icon', Icon)
+Vue.component('expander', Expander)
 
 Vue.filter('filesize', filters.formatFileSize)
 Vue.prototype.$http = http

@@ -11,7 +11,7 @@
       <project-menu v-bind="$route.params"/>
     </portal>
 
-    <v-layout class="column mr-2 py-2 left-panel mt-2 elevation-3">
+    <v-layout class="column py-2 left-panel mt-2 mr-1 elevation-3">
       <timeline
         :files="{
           label: 'Files',
@@ -35,11 +35,12 @@
       <v-spacer/>
     </v-layout>
 
-    <div class="content my-2">
+    <v-layout class="column content my-2 mx-1">
+      <expander/>
       <keep-alive>
         <router-view v-if="projectConfig"/>
       </keep-alive>
-    </div>
+    </v-layout>
   </div>
 </template>
 
@@ -47,7 +48,7 @@
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
-import { layersList, filterLayers } from '@/utils'
+import { filterLayers } from '@/utils'
 
 export default {
   name: 'Project',
@@ -117,16 +118,26 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(auto, 1fr) auto 1fr;
-}
-.content > * {
-  width: 100%;
+  display: contents;
+  .left-panel {
+    grid-column: 1 / 2;
+  }
 }
 .left-panel {
   background-color: #3f3f3f;
   min-width: 250px;
   overflow: auto;
+}
+.content {
+  grid-column: 2 / 3;
+  width: 1200px;
+  overflow: auto;
+  @media (max-width: 1600px) {
+    width: auto;
+  }
+  @media (max-width: 1450px) {
+    width: auto;
+    grid-column: 2 / 4;
+  }
 }
 </style>

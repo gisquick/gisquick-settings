@@ -9,7 +9,7 @@
     </portal>
 
     <!-- Timeline -->
-    <v-layout class="column left-panel mr-1 py-2">
+    <v-layout class="column left-panel py-2 mt-2 mr-1">
       <timeline
         :checkin="{
           label: '1. Check-in',
@@ -48,7 +48,8 @@
       <v-spacer/>
     </v-layout>
 
-    <div class="content main">
+    <v-layout class="column content my-2 mx-1">
+      <expander/>
       <keep-alive>
         <plugin-disconnected
           v-if="$route.meta.requiresPlugin && !$ws.pluginConnected"
@@ -186,23 +187,24 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(auto, 1fr) auto 1fr;
-  grid-template-rows: auto 1fr;
-  .timeline {
-    grid-row: 1 / 2;
-    grid-column: 2 / 3;
-  }
+  display: contents;
   .left-panel {
-    grid-row: 1 / 3;
     grid-column: 1 / 2;
     overflow: auto;
     background-color: #3f3f3f;
+    min-width: 280px;
   }
-  .main {
+  .content {
     grid-row: 2 / 3;
-    grid-column: 2 / 3; 
+    grid-column: 2 / 3;
+    width: 1200px;
+    overflow: auto;
+    @media (max-width: 1600px) {
+      width: auto;
+    }
+    @media (max-width: 1450px) {
+      grid-column: 2 / 4;
+    }
   }
   .scroll-area {
     overflow: auto;

@@ -1,8 +1,9 @@
 <template>
-  <div class="elevation-2 content my-2">
+  <v-layout class="content column elevation-2 my-2 mx-1">
     <portal to="menu-actions" v-if="pageVisible">
       <projects-menu @upload-finished="fetchProjects"/>
     </portal>
+    <expander/>
     <v-data-table
       :headers="headers"
       :items="projects"
@@ -27,7 +28,7 @@
         </a>
       </template>
     </v-data-table>
-  </div>
+  </v-layout>
 </template>
 
 <script>
@@ -123,6 +124,18 @@ a {
   .v-icon {
     color: inherit;
     opacity: 0.8;
+  }
+}
+.content {
+  grid-row: 2 / 3;
+  grid-column: 2 / 3;
+  width: 1200px;
+  overflow: auto;
+  @media (max-width: 1600px) {
+    width: auto;
+  }
+  @media (max-width: 1450px) {
+    grid-column: 1 / 4;
   }
 }
 </style>

@@ -1,17 +1,14 @@
 <template>
-  <v-layout column fill-height>
+  <div class="app-layout">
     <v-store/>
 
-    <v-app-bar dark dense class="shrink">
-      <div class="logo">
-        <img src="./assets/text_logo_dark.svg"/>
-      </div>
-      <!-- <router-link to="/" class="logo">
-        <img src="./assets/text_logo_dark.svg"/>
-      </router-link> -->
+    <div class="header-bg elevation-3"/>
+    <div class="logo pl-2">
+      <img src="./assets/text_logo_dark.svg"/>
+    </div>
 
-      <portal-target name="menu" class="menu layout row">
-        <!-- <v-divider vertical class="my-2 mr-1"/> -->
+    <portal-target name="menu" class="menu">
+      <themeable-toolbar dark>
         <v-btn rounded text :to="{name: 'projects'}">
           <v-icon class="mr-1">view_list</v-icon>
           Projects
@@ -19,29 +16,29 @@
         <portal-target name="menu-breadcrumbs" multiple/>
         <v-spacer/>
         <portal-target name="menu-actions"/>
-      </portal-target>
+      </themeable-toolbar>
+    </portal-target>
 
-      <v-layout justify-end>
-        <img :src="pluginStatusImg" class="mr-2"/>
-        <v-menu>
-          <template v-slot:activator="{ on: menu }">
-            <v-btn icon height="40" width="40" v-on="{ ...menu }">
-              <v-icon>menu</v-icon>
-            </v-btn>
-          </template>
-          <v-list dense class="py-1">
-            <v-list-item @click="logout">
-              <v-list-item-title>Logout</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </v-layout>
-    </v-app-bar>
+    <v-layout class="app-menu align-center justify-end pr-2">
+      <img :src="pluginStatusImg" class="mr-2"/>
+      <v-menu>
+        <template v-slot:activator="{ on: menu }">
+          <v-btn dark icon height="40" width="40" v-on="{ ...menu }">
+            <v-icon>menu</v-icon>
+          </v-btn>
+        </template>
+        <v-list dense class="py-1">
+          <v-list-item @click="logout">
+            <v-list-item-title>Logout</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </v-layout>
 
     <keep-alive>
-      <router-view v-if="user && $ws.connected" class="fill-height"/>
+      <router-view v-if="user && $ws.connected"/>
     </keep-alive>
-  </v-layout>
+  </div>
 </template>
 
 <script>
@@ -49,8 +46,17 @@ import Vue from 'vue'
 import VStore from '@/Store.vue'
 import WebsocketMessenger from '@/ws.js'
 
+import Themeable from 'vuetify/lib/mixins/themeable'
+
+const ThemeableToolbar = {
+  mixins: [Themeable],
+  render (h) {
+    return <div class="layout row align-center mx-0">{this.$slots.default}</div>
+  }
+}
+
 export default {
-  components: { VStore },
+  components: { VStore, ThemeableToolbar },
   computed: {
     user () {
       return this.$root.user
@@ -79,53 +85,49 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.logo {
-  height: inherit;
-  img {
-    height: inherit;
-    padding: 10px 0;
+.app-layout {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(auto, 1fr) auto 1fr;
+  grid-template-rows: 48px 1fr;
+  @media (max-width: 1450px) {
+    grid-template-columns: auto 1fr auto;
   }
-}
-::v-deep .content {
-  margin: 0 auto;
-  display: flex;
-  position: relative;
-  overflow: auto;
-  min-width: 960px;
-
-  @media (max-width: 960px) {
-    min-width: 0;
+  .header-bg {
+    background-color: #424242;
+    grid-column: 1 / 4;
+    grid-row: 1 / 2;
+  }
+  .logo {
+    grid-row: 1 / 2;
+    grid-column: 1 / 2;
+    // min-width: 250px;
     width: 100%;
-  }
-  @media (min-width: 1440px) {
-    width: 1200px;
-  }
-}
-.v-app-bar {
-  ::v-deep .v-toolbar__content {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    height: inherit;
+    img {
+      height: inherit;
+      padding: 10px 0;
+    }
   }
   .menu {
-    flex: 1 0;
-    ::v-deep .v-btn--text {
-      padding: 0 0.5em
-    }
-    @media (max-width: 960px) {
-      min-width: 0;
-      width: auto;
-    }
-    @media (min-width: 1440px) {
-      width: 1200px;
-    }
+    grid-row: 1 / 2;
+    grid-column: 2 / 3;
+    display: flex;
     ::v-deep {
       .v-btn.v-btn--text {
+        padding: 0 8px;
         &:before {
           display: none;
         }
         // text-transform: none;
       }
     }
+  }
+  .app-menu {
+    grid-row: 1 / 2;
+    grid-column: 3 / 4;
+    min-width: 96px;
   }
 }
 </style>

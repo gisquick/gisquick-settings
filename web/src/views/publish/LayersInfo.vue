@@ -43,7 +43,6 @@
     :items="layers"
     :headers="headers"
     :opened.sync="opened"
-    class="mx-1 my-1 elevation-2"
   >
     <template v-slot:leaf="{ item, depth }">
       <v-layout shrink align-center>
