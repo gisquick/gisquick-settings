@@ -12,7 +12,7 @@
 <script>
 import DefaultRedirect from '@/mixins/DefaultRedirect'
 // import LayersView from '@/views/LayersView'
-import Project from '@/views/publish/Project'
+import ProjectSettings from '@/views/publish/ProjectSettings'
 import LayersView from '@/views/publish/LayersSettings'
 import TopicsEditor from '@/components/TopicsEditor'
 
@@ -39,10 +39,11 @@ export default {
     routes () {
       return this.config && {
         project: {
-          component: Project,
+          component: ProjectSettings,
           props: {
             layers: this.store.projectInfo.layers,
-            config: this.config
+            config: this.config,
+            projectPath: this.projectPath
           }
         },
         layers: {

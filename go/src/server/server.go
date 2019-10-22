@@ -14,7 +14,8 @@ import (
 // Config export
 type Config struct {
 	ProjectsDirectory string
-	Server            string
+	AppServer         string
+	MapServer         string
 	MaxFileUpload     int64
 	MaxProjectSize    int64
 }
@@ -97,6 +98,7 @@ func (s *Server) routes() {
 	s.router.Post("/api/project/config/{user}/{directory}/{name}", s.loginRequired(s.handleSaveConfig()))
 	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
+	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
 	// s.router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("web"))))
 	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
 	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))

@@ -35,7 +35,8 @@ func parseFileSize(value string) int64 {
 func main() {
 	config := server.Config{
 		ProjectsDirectory: os.Getenv("PROJECTS_DIR"),
-		Server:            os.Getenv("SERVER_URL"),
+		AppServer:         os.Getenv("SERVER_URL"),
+		MapServer:         os.Getenv("MAPSERVER_URL"),
 		MaxFileUpload:     parseFileSize(optEnv("MAX_FILE_UPLOAD", "100M")),
 		MaxProjectSize:    parseFileSize(optEnv("MAX_PROJECT_SIZE", "200M")),
 	}

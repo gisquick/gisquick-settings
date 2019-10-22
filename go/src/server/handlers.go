@@ -506,6 +506,35 @@ func (s *Server) handleGetProjectMeta() http.HandlerFunc {
 	}
 }
 
+func (s *Server) handleGetMap() http.HandlerFunc {
+	client := &http.Client{}
+	mapserverPublishDir := "/publish"
+	return func(w http.ResponseWriter, r *http.Request) {
+		mapParam := r.URL.Query().Get("MAP")
+		username := strings.Split(mapParam, "/")[0]
+		user := r.Context().Value(contextKeyUser).(*User)
+		if user.Username != username {
+			http.Error(w, "Permission denied", http.StatusForbidden)
+			return
+		}
+		req, _ := http.NewRequest(http.MethodGet, s.config.MapServer, nil)
+		query := r.URL.Query()
+		query.Set("MAP", filepath.Join(mapserverPublishDir, mapParam))
+		req.URL.RawQuery = query.Encode()
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("Mapserver proxy request failed: %s\n", err)
+			http.Error(w, "Error", http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		w.WriteHeader(resp.StatusCode)
+		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+		// w.Header().Set("Content-Length", resp.Header.Get("Content-Length"))
+		io.Copy(w, resp.Body)
+	}
+}
+
 func (s *Server) handleIndex() http.HandlerFunc {
 	tmpl := template.Must(template.ParseFiles("web/index.html"))
 
@@ -540,7 +569,7 @@ func (s *Server) handleDev() http.HandlerFunc {
 }
 
 func (s *Server) handleProxyRequest() http.HandlerFunc {
-	url, _ := url.Parse(s.config.Server)
+	url, _ := url.Parse(s.config.AppServer)
 	return func(w http.ResponseWriter, r *http.Request) {
 		httputil.NewSingleHostReverseProxy(url).ServeHTTP(w, r)
 	}
