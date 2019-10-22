@@ -1,4 +1,5 @@
 module.exports = {
+  // transpileDependencies: ['vuetify'],
   publicPath: process.env.NODE_ENV === 'production' ? '/user/' : '/',
   assetsDir: 'static',
   pages: process.env.NODE_ENV === 'production'
@@ -31,6 +32,9 @@ module.exports = {
 
       .oneOf('inline-svg')
       .test(/inline\/.*\.svg$/)
+      .use('babel')
+      .loader('babel-loader')
+      .end()
       .use('vue-svg-loader')
       .loader('vue-svg-loader')
       .options({
