@@ -125,7 +125,7 @@ export default {
 }
 .left-panel {
   background-color: #3f3f3f;
-  min-width: 250px;
+  min-width: 280px;
   overflow: auto;
 }
 .content {

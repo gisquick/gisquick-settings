@@ -32,7 +32,6 @@
         <path
           d="M 50 0 Q 0 50 50 100"
           class="progress-line"
-          :xstroke-dasharray="`${files.disabled ? 0 : 120}, 500`"
           :stroke-dasharray="`${!visited[files.link.name] ? 0 : 120}, 500`"
         />
       </svg>
@@ -100,7 +99,6 @@
         <path
           d="M 50 0 Q 100 50 50 100"
           class="progress-line"
-          :xstroke-dasharray="`${settings.disabled ? 0 : 120}, 500`"
           :stroke-dasharray="`${!visited[settings.link.name] ? 0 : 120}, 500`"
         />
       </svg>

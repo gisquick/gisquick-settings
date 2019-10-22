@@ -36,7 +36,7 @@
     </v-layout>
 
     <keep-alive>
-      <router-view v-if="user && $ws.connected"/>
+      <router-view/>
     </keep-alive>
   </div>
 </template>
@@ -102,7 +102,7 @@ export default {
   .logo {
     grid-row: 1 / 2;
     grid-column: 1 / 2;
-    // min-width: 250px;
+    max-width: 250px;
     width: 100%;
     height: inherit;
     img {
@@ -127,7 +127,11 @@ export default {
   .app-menu {
     grid-row: 1 / 2;
     grid-column: 3 / 4;
-    min-width: 96px;
+    min-width: 92px;
+    img {
+      height: 24px;
+      width: 24px;
+    }
   }
 }
 </style>

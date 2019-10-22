@@ -131,6 +131,7 @@ a {
   grid-column: 2 / 3;
   width: 1200px;
   overflow: auto;
+  background-color: #fff;
   @media (max-width: 1600px) {
     width: auto;
   }
