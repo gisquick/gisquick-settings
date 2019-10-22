@@ -377,15 +377,13 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 }
 
 func (s *Server) handleSaveConfig() http.HandlerFunc {
-	type Config struct {
-		File string `json:"file"`
-	}
 	var maxBodySize int64 = 1024 * 1024
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
+		projectName := chi.URLParam(r, "name")
 		if user.Username != username {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
@@ -398,16 +396,7 @@ func (s *Server) handleSaveConfig() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		var conf Config
-		err = json.Unmarshal(data, &conf)
-		if err != nil {
-			http.Error(w, "Invalid data", http.StatusBadRequest)
-			return
-		}
-
-		projectPath := filepath.Base(conf.File)
-		filename := strings.TrimSuffix(projectPath, filepath.Ext(projectPath)) + ".json"
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", filename)
+		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", projectName+".json")
 		err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
 		if err != nil {
 			http.Error(w, "FileServer Error", http.StatusInternalServerError)
@@ -435,14 +424,15 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
-		filename := chi.URLParam(r, "name")
+		projectName := chi.URLParam(r, "name")
 		if user.Username != username {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, filename)
+		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, projectName+".meta")
 		defer r.Body.Close()
 
+		// TODO: create saveConfigFile(data []byte, dest string) function on server or in fs
 		data, _ := ioutil.ReadAll(r.Body)
 		var out bytes.Buffer
 		if err := json.Indent(&out, data, "", "  "); err != nil {
@@ -455,6 +445,7 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
 		}
+		// save content as it is
 		// fs.SaveToFile(r.Body, dest)
 		w.Write([]byte(""))
 	}
@@ -496,8 +487,19 @@ func (s *Server) handleGetProjectMeta() http.HandlerFunc {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		http.ServeFile(w, r, filepath.Join(root, matchedFilename))
+
+		jsonContent, err := ioutil.ReadFile(filepath.Join(root, matchedFilename))
+		if err != nil {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		var meta map[string]interface{}
+		if err = json.Unmarshal(jsonContent, &meta); err != nil {
+			http.Error(w, "Error", http.StatusInternalServerError)
+			return
+		}
+		meta["project"] = filepath.Join(username, directory, strings.TrimSuffix(matchedFilename, filepath.Ext(matchedFilename)))
+		s.jsonResponse(w, meta)
 	}
 }
 

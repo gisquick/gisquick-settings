@@ -5,7 +5,7 @@
       :src-files="src.files"
       :src-path="store.projectDirectory"
       :src-loading="fetchingLocalFiles"
-      :dest-path="projectPath"
+      :dest-path="projectServerDir"
       :dest-loading="fetchingServerFiles"
       :dest-files="dest"
       :files-progress="filesUploadProgress"
@@ -69,6 +69,8 @@
 
 <script>
 import _omit from 'lodash/omit'
+import { dirname } from 'path'
+
 import FilesBrowser from '@/components/FilesBrowser'
 import { mapLayers, layersList } from '@/utils.js'
 import { createUpload } from '@/upload.js'
@@ -96,6 +98,9 @@ export default {
     projectPath () {
       return this.store.projectPath
     },
+    projectServerDir () {
+      return dirname(this.projectPath)
+    },
     browser () {
       return this.$refs.filesBrowser
     },
@@ -104,7 +109,7 @@ export default {
     }
   },
   watch: {
-    projectPath: {
+    projectServerDir: {
       immediate: true,
       handler (path) {
         if (path) {
@@ -120,7 +125,7 @@ export default {
   },
   activated () {
     this.fetchFiles()
-    if (this.projectPath) {
+    if (this.projectServerDir) {
       this.fetchServerFiles()
     }
   },
@@ -135,7 +140,7 @@ export default {
     },
     fetchServerFiles () {
       this.fetchingServerFiles = true
-      this.$http.get(`/api/project/files/${this.projectPath}`)
+      this.$http.get(`/api/project/files/${this.projectServerDir}`)
         .then(resp => {
           this.dest = resp.data
           this.fetchingServerFiles = false
@@ -179,7 +184,7 @@ export default {
         return
       }
 
-      this.upload = createUpload(this.$ws, files, this.projectPath)
+      this.upload = createUpload(this.$ws, files, this.projectServerDir)
       this.uploadProgress = this.upload.info
       try {
         await this.upload.start()

@@ -15,7 +15,6 @@
           label: '1. Check-in',
           link: { name: 'qgis-project' },
           disabled: !$ws.pluginConnected,
-          done: progress.projectValid,
           sublinks: [
             {label: 'General', page: 'general', status: checkin.general},
             {label: 'Layers', page: 'layers', status: checkin.layers}
@@ -24,8 +23,7 @@
         :files="{
           label: '2. Upload',
           link: {name: 'publish-upload'},
-          disabled: !progress.projectValid || !$ws.pluginConnected,
-          done: progress.filesUploaded
+          disabled: !progress.projectValid || !$ws.pluginConnected
         }"
         :settings="{
           label: '3. Settings',
@@ -57,14 +55,14 @@
         />
         <router-view v-else class="scroll-area"/>
       </keep-alive>
-    </div>
+    </v-layout>
   </div>
 </template>
 
 <script>
 import _omit from 'lodash/omit'
 import { basename, extname } from 'path'
-import { layersList, filterLayers, scalesToResolutions } from '@/utils'
+import { filterLayers, scalesToResolutions } from '@/utils'
 import Page from '@/mixins/Page'
 import PluginDisconnected from '@/components/PluginDisconnected'
 import Timeline from '@/components/Timeline'
@@ -97,7 +95,9 @@ export default {
     },
     projectPath () {
       if (this.projectDirectory) {
-        return `${this.user.username}/${basename(this.projectDirectory)}`
+        const filename = basename(this.projectInfo.file)
+        const projectName = filename.substring(0, filename.length - extname(filename).length)
+        return `${this.user.username}/${basename(this.projectDirectory)}/${projectName}`
       }
       return ''
     },
@@ -146,6 +146,11 @@ export default {
     $route: {
       immediate: true,
       handler (route) {
+        if (route.path.startsWith('/publish/') && route.name !== 'qgis-project' && !this.progress.projectValid) {
+          // invalid state => redirect to beginning
+          this.$router.push({ name: 'publish' })
+          return
+        }
         this.$set(this.visitedLinks, route.name, true)
       }
     }
@@ -173,9 +178,7 @@ export default {
         publish_date_unix: new Date().getTime()/1000|0,
         gislab_user: this.user.username
       }
-      const projFile = this.projectInfo.file
-      const metafile = basename(projFile).replace(extname(projFile), ".meta")
-      this.$http.post(`/api/project/meta/${this.projectPath}/${metafile}`, meta)
+      this.$http.post(`/api/project/meta/${this.projectPath}`, meta)
         .then(() => {
           this.$notification.show('Published!')
           this.publishProgress.published = true
