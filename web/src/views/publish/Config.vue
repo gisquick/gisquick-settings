@@ -11,7 +11,6 @@
 
 <script>
 import DefaultRedirect from '@/mixins/DefaultRedirect'
-// import LayersView from '@/views/LayersView'
 import ProjectSettings from '@/views/publish/ProjectSettings'
 import LayersView from '@/views/publish/LayersSettings'
 import TopicsEditor from '@/components/TopicsEditor'

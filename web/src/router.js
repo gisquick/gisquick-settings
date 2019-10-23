@@ -7,8 +7,6 @@ import QgisProject from '@/views/publish/QgisProject'
 import Upload from '@/views/publish/Upload'
 import Config from '@/views/publish/Config'
 
-// import LayersStore from '@/LayersStore'
-
 export default new VueRouter({
   mode: 'history',
   base: process.env.BASE_URL,

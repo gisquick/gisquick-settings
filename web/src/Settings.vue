@@ -1,6 +1,5 @@
 <template>
   <div class="app-layout">
-    <v-store/>
 
     <div class="header-bg elevation-3"/>
     <div class="logo pl-2">
@@ -43,7 +42,6 @@
 
 <script>
 import Vue from 'vue'
-import VStore from '@/Store.vue'
 import WebsocketMessenger from '@/ws.js'
 
 import Themeable from 'vuetify/lib/mixins/themeable'
@@ -56,7 +54,7 @@ const ThemeableToolbar = {
 }
 
 export default {
-  components: { VStore, ThemeableToolbar },
+  components: { ThemeableToolbar },
   computed: {
     user () {
       return this.$root.user

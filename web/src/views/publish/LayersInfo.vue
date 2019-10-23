@@ -1,43 +1,4 @@
 <template>
-  <!-- <tree-table
-    v-if="config"
-    :items="config.layers"
-    :headers="headers"
-    class="tree"
-  >
-    <template v-slot:leaf="{ item, depth }">
-      <v-layout shrink align-center>
-        <icon
-          v-if="item.type === 'vector'"
-          :name="geomIcons[item.geom_type]"
-          class="grey--text mr-2"
-        />
-        <span>{{ item.name }}</span>
-      </v-layout>
-    </template>
-    <template v-slot:leaf.visible="{ item }">
-      <v-checkbox
-        v-model="item.visible"
-        color="grey darken-1"
-        class="my-0 py-1 justify-center"
-        :ripple="false"
-        hide-details
-      />
-    </template>
-    <template v-slot:leaf.hidden="{ item }">
-      <v-checkbox
-        v-model="item.hidden"
-        :disabled="!item.visible"
-        color="grey darken-1"
-        class="my-0 py-1 justify-center"
-        :ripple="false"
-        hide-details
-      />
-    </template>
-    <template v-slot:leaf.queryable="{ item }">
-      <span>?</span>
-    </template>
-  </tree-table> -->
   <layers-table
     label="Layer"
     :items="layers"
@@ -85,15 +46,12 @@
 </template>
 
 <script>
-// import TreeView from '@/components/TreeView'
-// import TreeTable from '@/components/TreeTable'
 import LayersTable from '@/components/LayersTable'
 import { layersList, layersGroups } from '@/utils'
 import path from 'path'
 
 export default {
   name: 'Layers',
-  // components: { TreeView, TreeTable, LayersTable },
   components: { LayersTable },
   props: {
     config: Object
