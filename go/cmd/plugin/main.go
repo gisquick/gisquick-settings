@@ -51,7 +51,10 @@ func Stop() {
 
 //export SendMessage
 func SendMessage(msg string) {
-	fmt.Printf("SendMessage: %s", msg)
+	if c == nil {
+		return
+	}
+	fmt.Printf("SendMessage: %s\n", msg)
 	if c.WsConn == nil {
 		fmt.Println("Connection error")
 		return
