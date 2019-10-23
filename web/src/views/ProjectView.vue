@@ -29,8 +29,9 @@
         }"
         :publish="{
           label: 'Update',
-          disabled: true
+          disabled: !configChanged
         }"
+        @publish="saveChanges"
       />
       <v-spacer/>
     </v-layout>
@@ -45,6 +46,7 @@
 </template>
 
 <script>
+import isEqual from 'lodash/isEqual'
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
@@ -63,6 +65,7 @@ export default {
     return {
       layers: [],
       projectConfig: null,
+      projectConfigOriginal: null,
       projectInfo: null
     }
   },
@@ -72,6 +75,9 @@ export default {
     },
     overlays () {
       return this.projectConfig && filterLayers(this.projectConfig.overlays, l => l.publish)
+    },
+    configChanged () {
+      return !isEqual(this.projectConfig, this.projectConfigOriginal)
     }
   },
   watch: {
@@ -88,8 +94,6 @@ export default {
   },
   methods: {
     fetchProjectConfig () {
-      // const params = { PROJECT: this.projectPath }
-      // this.$http.get('/project.json', { params })
       this.$http.get(`/api/project/meta/${this.projectPath}`)
         .then(resp => {
           // TODO: load projectInfo file when available
@@ -102,6 +106,7 @@ export default {
           //   l.publish = true
           // })
           this.projectConfig = resp.data
+          this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
         })
         .catch(err => {
           console.error(err)
@@ -110,7 +115,11 @@ export default {
         })
     },
     saveChanges () {
-
+      this.$http.post(`/api/project/meta/${this.projectPath}`, this.projectConfig)
+        .then(() => {
+          this.$notification.show('Updated!')
+          this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
+        })
     }
   }
 }
