@@ -1,0 +1,4 @@
+*.pyc
+gisquick.h
+gisquick.so
+gisquick.dll
