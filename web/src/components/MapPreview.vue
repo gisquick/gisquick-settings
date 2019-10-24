@@ -1,5 +1,5 @@
 <template>
-  <div class="map my-2"/>
+  <div class="map"/>
 </template>
 
 <script>
@@ -17,6 +17,8 @@ import { fromExtent } from 'ol/geom/Polygon'
 import { getCenter } from 'ol/extent'
 import { get as getProj } from 'ol/proj'
 import { register } from 'ol/proj/proj4'
+import { defaults } from 'ol/interaction'
+import MouseWheelZoom from 'ol/interaction/MouseWheelZoom'
 import proj4 from 'proj4'
 
 import 'ol/ol.css'
@@ -63,9 +65,8 @@ export default {
       const project = config.project || this.project
       const url = `/api/project/map?MAP=${project}.qgs`
 
-      const layers = layersList(config.overlays)
-        .filter(l => l.visible)
-        .map(l => l.serverName || l.name)
+      const layers = layersList(config.overlays).filter(l => l.visible)
+      layers.sort((a, b) => (b.drawing_order || 0) - (a.drawing_order || 0))
 
       let projection = getProj(config.projection.code)
       if (!projection) {
@@ -80,7 +81,7 @@ export default {
           url: url,
           // resolutions: this.resolutions,
           params: {
-            LAYERS: layers.join(','),
+            LAYERS: layers.map(l => l.serverName || l.name).join(','),
             FORMAT: 'image/png',
             TRANSPARENT: 'false'
           },
@@ -101,6 +102,9 @@ export default {
           fill: null
         })
       })
+      const zoomInteraction = new MouseWheelZoom({
+        condition: evt => evt.type === 'wheel' && evt.originalEvent.ctrlKey
+      })
       this.map = new Map({
         layers: [layer, extentLayer],
         view: new View({
@@ -109,7 +113,7 @@ export default {
           zoom: 0,
           // resolutions: config.tile_resolutions,
         }),
-        // controls: []
+        interactions: defaults({mouseWheelZoom: false}).extend([zoomInteraction])
       })
       this.map.setTarget(this.$el)
       this.map.getView().fit(this.config.extent, { padding: [50, 50, 50, 50] })
@@ -122,9 +126,7 @@ export default {
 .map {
   height: 500px;
   // width: 100%;
-  max-width: 900px;
   position: relative;
   background-color: #fff;
-  border: 1px solid #ddd;
 }
 </style>
