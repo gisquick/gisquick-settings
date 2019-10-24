@@ -36,7 +36,7 @@
           type="number"
           class="mr-2"
         />
-        <v-menu bottom left max-height="360">
+        <v-menu bottom max-height="400">
           <template v-slot:activator="{ on }">
             <v-btn
               v-on="on"
@@ -46,7 +46,7 @@
               <v-icon>menu</v-icon>
             </v-btn>
           </template>
-          <v-list>
+          <v-list dense>
             <v-list-item @click="enableDrawTool">Draw on map</v-list-item>
             <v-list-item
               v-if="allLayersExtent"
@@ -70,14 +70,30 @@
           </v-list>
         </v-menu>
       </v-layout>
-      <label>
-        <small>Map Preview</small>
-      </label>
-      <map-preview
-        :project="projectPath"
-        :config="config"
-        ref="mapPreview"
-      />
+      <v-layout row ml-0 mr-2 justify-space-between>
+        <v-layout class="column shrink mr-2">
+          <label>
+            <small>Map scales</small>
+          </label>
+          <scales-list
+            :value="config.scales"
+            @input="updateScales"
+            @click:scale="zoomToScale"
+            class="scales-list box my-1"
+          />
+        </v-layout>
+        <v-layout class="map-preview column">
+          <label>
+            <small>Map Preview</small>
+          </label>
+          <map-preview
+            :project="projectPath"
+            :config="config"
+            class="box my-1 grow"
+            ref="mapPreview"
+          />
+        </v-layout>
+      </v-layout>
       <v-checkbox
         label="Map cache"
         color="primary"
@@ -92,7 +108,8 @@
 import { extend } from 'ol/extent'
 import Draw, { createBox } from 'ol/interaction/Draw'
 
-import { layersList } from '@/utils'
+import { layersList, scalesToResolutions } from '@/utils'
+import ScalesList from '@/components/ScalesList'
 
 function roundExtent (extent) {
   const maxVal = Math.max(...extent.map(v => Math.abs(v)))
@@ -105,6 +122,7 @@ function roundExtent (extent) {
 export default {
   name: 'ProjectSettings',
   components: {
+    ScalesList,
     'map-preview': () => import('@/components/MapPreview')
   },
   props: {
@@ -145,6 +163,15 @@ export default {
     setExtent (extent) {
       this.config.extent = roundExtent(extent)
     },
+    zoomToScale (scale) {
+      const res = scalesToResolutions([scale], this.config.units)[0]
+      const olMap = this.$refs.mapPreview.map
+      olMap.getView().setResolution(res)
+    },
+    updateScales (scales) {
+      this.config.scales = scales
+      this.config.tile_resolutions = scalesToResolutions(scales, this.config.units)
+    },
     enableDrawTool () {
       const olMap = this.$refs.mapPreview.map
       const draw = new Draw({
@@ -168,5 +195,11 @@ export default {
 }
 label {
   opacity: 0.65;
+}
+.scales-list {
+  width: 200px;
+}
+.map-preview {
+  max-width: 900px;
 }
 </style>
