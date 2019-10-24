@@ -11,14 +11,7 @@
         v-model="config.authentication"
       />
       <label><small>Extent:</small></label>
-      <v-layout ml-2>
-        <!-- <v-text-field
-          label="Extent"
-          :value="config.extent"
-          @change="setExtent"
-          :rules="[validators.extent]"
-          class="mr-2"
-        /> -->
+      <v-layout class="extent ml-2">
         <v-text-field
           label="X-Min"
           v-model.number="config.extent[0]"
@@ -43,23 +36,52 @@
           type="number"
           class="mr-2"
         />
-        <v-select
-          placeholder="Set layer extent"
-          :items="layersExtents"
-          @input="setExtent"
-        />
+        <v-menu bottom left max-height="360">
+          <template v-slot:activator="{ on }">
+            <v-btn
+              v-on="on"
+              class="mt-2"
+              icon
+            >
+              <v-icon>menu</v-icon>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item @click="enableDrawTool">Draw on map</v-list-item>
+            <v-list-item
+              v-if="allLayersExtent"
+              @click="setExtent(allLayersExtent)"
+            >
+              All layers
+            </v-list-item>
+            <v-list-item-group>
+              <v-layout row align-center @click.stop="">
+                <v-divider/>
+                <small class="mx-2 grey--text">Use layer extent</small>
+                <v-divider/>
+              </v-layout>
+            </v-list-item-group>
+            <v-list-item
+              v-for="(layer, i) in extentLayers"
+              :key="i"
+              @click="setExtent(layer.extent)"
+              v-text="layer.name"
+            />
+          </v-list>
+        </v-menu>
       </v-layout>
-      <v-checkbox
-        label="Map cache"
-        color="primary"
-        v-model="config.use_mapcache"
-      />
       <label>
         <small>Map Preview</small>
       </label>
       <map-preview
         :project="projectPath"
         :config="config"
+        ref="mapPreview"
+      />
+      <v-checkbox
+        label="Map cache"
+        color="primary"
+        v-model="config.use_mapcache"
       />
     </v-form>
     <v-spacer/>
@@ -67,6 +89,9 @@
 </template>
 
 <script>
+import { extend } from 'ol/extent'
+import Draw, { createBox } from 'ol/interaction/Draw'
+
 import { layersList } from '@/utils'
 
 function roundExtent (extent) {
@@ -75,13 +100,6 @@ function roundExtent (extent) {
     return extent.map(v => Math.round(v))
   }
   return extent
-}
-
-function validateExtent (value) {
-  if (!Array.isArray(value) || value.length !== 4) {
-    return "Not valid extent"
-  }
-  return true
 }
 
 export default {
@@ -109,27 +127,35 @@ export default {
         }
       ]
     },
-    layersExtents () {
-      return layersList(this.layers)
-        .filter(l => l.extent)
-        .map(l => ({
-          text: l.name,
-          value: roundExtent(l.extent)
-        }))
+    extentLayers () {
+      return layersList(this.layers).filter(l => l.extent)
     },
-    validators () {
-      return {
-        extent: validateExtent
+    allLayersExtent () {
+      if (this.extentLayers.length) {
+        let extent = this.extentLayers[0].extent.slice()
+        this.extentLayers.slice(1).forEach(layer => {
+          extend(extent, layer.extent)
+        })
+        return extent
       }
+      return null
     }
   },
   methods: {
     setExtent (extent) {
-      if (typeof extent === 'string') {
-        this.config.extent = extent.split(',').filter(v => !Number.isNaN(v)).map(parseFloat)
-      } else {
-        this.config.extent = extent
-      }
+      this.config.extent = roundExtent(extent)
+    },
+    enableDrawTool () {
+      const olMap = this.$refs.mapPreview.map
+      const draw = new Draw({
+        type: 'Circle',
+        geometryFunction: createBox()
+      })
+      olMap.addInteraction(draw)
+      draw.once('drawend', evt => {
+        this.setExtent(evt.feature.getGeometry().getExtent())
+        olMap.removeInteraction(draw)
+      })
     }
   }
 }
