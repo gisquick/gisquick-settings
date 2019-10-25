@@ -86,12 +86,11 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 	return nil
 }
 
-func (s *Server) routes() {
+func (s *Server) apiRoutes() {
 	s.router.Get("/ws/plugin", s.loginRequired(s.handlePluginWs()))
 	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
 	s.router.Get("/api/project/files/{user}/{directory}", s.loginRequired(s.handleProjectFiles()))
 	s.router.Post("/api/project/upload", s.loginRequired(s.handleNewUpload()))
-	// TODO: add authentication for upload (plugin)
 	s.router.Post("/api/project/upload/{user}/{directory}", s.loginRequired(s.handleUpload()))
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))
@@ -99,6 +98,9 @@ func (s *Server) routes() {
 	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
+}
+
+func (s *Server) prodRoutes() {
 	// s.router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("web"))))
 	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
 	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))
@@ -125,9 +127,11 @@ func NewServer(config Config, dev bool) *Server {
 	//
 	s := Server{config, chi.NewRouter(), upgrader, newWebsocketsMap(), newWebsocketsMap()}
 	s.router.Use(middleware.Logger)
-	s.routes()
+	s.apiRoutes()
 	if dev {
 		s.devRoutes()
+	} else {
+		s.prodRoutes()
 	}
 	return &s
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -41,7 +43,12 @@ func main() {
 		MaxProjectSize:    parseFileSize(optEnv("MAX_PROJECT_SIZE", "200M")),
 	}
 
-	s := server.NewServer(config, true)
+	devPtr := flag.Bool("dev", false, "development mode")
+	portPtr := flag.Int("port", 8001, "port number")
+	flag.Parse()
+
+	s := server.NewServer(config, *devPtr)
 	syscall.Umask(0)
-	log.Fatal(http.ListenAndServe(":8001", s))
+	address := fmt.Sprintf(":%d", *portPtr)
+	log.Fatal(http.ListenAndServe(address, s))
 }
