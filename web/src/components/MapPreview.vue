@@ -1,5 +1,15 @@
 <template>
-  <div class="map"/>
+  <div class="map">
+    <v-fade-transition>
+      <div v-if="loading" class="progressbar px-2 py-1">
+        <label class="mr-2"><small>Loading</small></label>
+        <v-progress-circular size="20" width="2" indeterminate/>
+      </div>
+    </v-fade-transition>
+    <div v-if="error" class="error-msg red--text">
+      <small>Failed to render map</small>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -11,7 +21,6 @@ import VectorSource from 'ol/source/Vector'
 import VectorLayer from 'ol/layer/Vector'
 import Feature from 'ol/Feature'
 import Style from 'ol/style/Style'
-import Fill from 'ol/style/Fill'
 import Stroke from 'ol/style/Stroke'
 import { fromExtent } from 'ol/geom/Polygon'
 import { getCenter } from 'ol/extent'
@@ -31,6 +40,12 @@ export default {
     project: String,
     config: Object
   },
+  data () {
+    return {
+      error: false,
+      loading: false
+    }
+  },
   computed: {
     extent () {
       return this.config.extent
@@ -39,13 +54,18 @@ export default {
   mounted () {
     this.createMap()
   },
+  beforeDestroy () {
+    if (this.map) {
+      this.map.dispose()
+    }
+  },
   watch: {
     project () {
       if (this.map) {
         this.map.dispose()
       }
     },
-    config (config) {
+    config () {
       if (this.map) {
         this.map.dispose()
       }
@@ -74,20 +94,27 @@ export default {
         register(proj4)
         projection = getProj(config.projection.code)
       }
-      const layer = new ImageLayer({
-        visible: true,
-        // extent: config.extent,
-        source: new ImageWMS({
-          url: url,
-          // resolutions: this.resolutions,
-          params: {
-            LAYERS: layers.map(l => l.serverName || l.name).join(','),
-            FORMAT: 'image/png',
-            TRANSPARENT: 'false'
-          },
-          serverType: 'qgis',
-          ratio: 1.0
-        })
+      const source = new ImageWMS({
+        url: url,
+        params: {
+          LAYERS: layers.map(l => l.serverName || l.name).join(','),
+          FORMAT: 'image/png',
+          TRANSPARENT: 'false'
+        },
+        serverType: 'qgis',
+        ratio: 1.0
+      })
+      const mapLayer = new ImageLayer({ source })
+      source.on('imageloadstart', () => {
+        this.loading = true
+      })
+      source.on('imageloadend', () => {
+        this.error = false
+        this.loading = false
+      })
+      source.on('imageloaderror', () => {
+        this.error = true
+        this.loading = false
       })
       this.extentSource = new VectorSource({
         features: [new Feature({ geometry: fromExtent(config.extent) })]
@@ -106,7 +133,7 @@ export default {
         condition: evt => evt.type === 'wheel' && evt.originalEvent.ctrlKey
       })
       this.map = new Map({
-        layers: [layer, extentLayer],
+        layers: [mapLayer, extentLayer],
         view: new View({
           projection: projection,
           center: getCenter(config.extent),
@@ -128,5 +155,20 @@ export default {
   // width: 100%;
   position: relative;
   background-color: #fff;
+
+  .progressbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    opacity: 0.75;
+    z-index: 100;
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+  .error-msg {
+    position: absolute;
+    top: 45%;
+    text-align: center;
+    width: 100%;
+  }
 }
 </style>
