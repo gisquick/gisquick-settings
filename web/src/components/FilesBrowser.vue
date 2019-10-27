@@ -129,6 +129,8 @@
 <script>
 import Path from 'path'
 import { dirname, basename, extname } from 'path'
+// import { win32 as dirname } from 'path-dirname'
+
 import _keyBy from 'lodash/keyBy'
 import _mapValues from 'lodash/mapValues'
 import PluginDisconnected from '@/components/PluginDisconnected'
@@ -179,7 +181,7 @@ const FileIcon = {
       icon = '$vuetify.icons.qgis'
     } else if (ext === '.sqlite') {
       icon = '$vuetify.icons.db'
-    } else if (ext.match(/\.(jpeg|jpg|gif|png|svg|tiff)$/) !== null) {
+    } else if (ext.match(/\.(jpeg|jpg|gif|png|svg|tif|tiff)$/) !== null) {
       icon = 'image'
     }
     return <v-icon>{icon}</v-icon>

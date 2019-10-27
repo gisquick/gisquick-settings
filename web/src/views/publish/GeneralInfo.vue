@@ -21,8 +21,8 @@
       disabled
     />
     <v-layout v-else align-center pl-4 my-1 shrink>
-      <v-icon color="red">error</v-icon>
-      <span class="red--text mx-2">Map scales are not defined</span>
+      <v-icon color="orange">warning</v-icon>
+      <span class="orange--text mx-2">Map scales are not defined</span>
       <small class="grey--text">(Project > Properties > General > Project Predefined Scales)</small>
     </v-layout>
     <h4 class="mt-1">Print templates</h4>
@@ -59,7 +59,8 @@ export default {
       return this.config.scales.map(s => `1: ${s}`).join(', ')
     },
     error () {
-      return this.config.scales.length === 0
+      return false
+      // return this.config.scales.length === 0
     },
     status () {
       if (this.error) {

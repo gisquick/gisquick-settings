@@ -50,7 +50,7 @@ import isEqual from 'lodash/isEqual'
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
-import { filterLayers } from '@/utils'
+import { layersList, filterLayers } from '@/utils'
 
 export default {
   name: 'Project',
@@ -98,13 +98,15 @@ export default {
         .then(resp => {
           // TODO: load projectInfo file when available
           const layers = [...resp.data.base_layers, ...resp.data.overlays]
+          // resp.data.layers = resp.data.overlays
+          layersList(layers)
+            .filter(l => l.publish === undefined)
+            .forEach(l => {
+              l.publish = true
+            })
           this.projectInfo = {
             layers
           }
-          // resp.data.layers = resp.data.overlays
-          // layersList(resp.data.layers).forEach(l => {
-          //   l.publish = true
-          // })
           this.projectConfig = resp.data
           this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
         })
@@ -115,7 +117,8 @@ export default {
         })
     },
     saveChanges () {
-      this.$http.post(`/api/project/meta/${this.projectPath}`, this.projectConfig)
+      const project = this.projectConfig.project || this.this.projectPath
+      this.$http.post(`/api/project/meta/${project}`, this.projectConfig)
         .then(() => {
           this.$notification.show('Updated!')
           this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))

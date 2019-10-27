@@ -27,13 +27,13 @@
               v-show="browser.newFiles.length"
               class="mx-2 green--text"
             >
-              New: {{ browser.newFiles.length }}
+              New files: {{ browser.newFiles.length }}
             </small>
             <small
               v-show="browser.modifiedFiles.length"
               class="mx-2 orange--text"
             >
-              Changed: {{ browser.modifiedFiles.length }}
+              Changed files: {{ browser.modifiedFiles.length }}
             </small>
           </template>
           <small v-else>No changes detected</small>

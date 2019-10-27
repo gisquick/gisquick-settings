@@ -36,7 +36,7 @@
           type="number"
           class="mr-2"
         />
-        <v-menu bottom max-height="400">
+        <v-menu bottom max-height="400" min-width="180">
           <template v-slot:activator="{ on }">
             <v-btn
               v-on="on"
@@ -52,7 +52,7 @@
               v-if="allLayersExtent"
               @click="setExtent(allLayersExtent)"
             >
-              All layers
+              Extent of all layers
             </v-list-item>
             <v-list-item-group>
               <v-layout row align-center @click.stop="">
@@ -73,7 +73,7 @@
       <v-layout row ml-0 mr-2 justify-space-between>
         <v-layout class="column shrink mr-2">
           <label>
-            <small>Map scales</small>
+            <small>Scales</small>
           </label>
           <scales-list
             :value="config.scales"
