@@ -1,9 +1,11 @@
 <template>
   <v-layout class="column box">
-    <v-form class="px-3">
+    <v-form class="px-3" ref="form">
       <v-text-field
         label="Title"
+        placeholder=" "
         v-model="config.title"
+        :rules="validators.title"
       />
       <v-select
         label="Authentication"
@@ -71,17 +73,14 @@
         </v-menu>
       </v-layout>
       <v-layout row ml-0 mr-2 justify-space-between>
-        <v-layout class="column shrink mr-2">
-          <label>
-            <small>Scales</small>
-          </label>
-          <scales-list
-            :value="config.scales"
-            @input="updateScales"
-            @click:scale="zoomToScale"
-            class="scales-list box my-1"
-          />
-        </v-layout>
+        <scales-list
+          label="Scales"
+          :value="config.scales"
+          @input="updateScales"
+          @click:scale="zoomToScale"
+          class="scales-list mt-1 shrink mr-2"
+          :rules="validators.scales"
+        />
         <v-layout class="map-preview column">
           <label>
             <small>Map Preview</small>
@@ -89,7 +88,7 @@
           <map-preview
             :project="projectPath"
             :config="config"
-            class="box my-1 grow"
+            class="box grow"
             ref="mapPreview"
           />
         </v-layout>
@@ -97,6 +96,7 @@
       <v-checkbox
         label="Map cache"
         color="primary"
+        class="mt-2"
         v-model="config.use_mapcache"
       />
     </v-form>
@@ -108,6 +108,7 @@
 import { extend } from 'ol/extent'
 import Draw, { createBox } from 'ol/interaction/Draw'
 
+import { required } from '@/validators'
 import { layersList, scalesToResolutions } from '@/utils'
 import ScalesList from '@/components/ScalesList'
 
@@ -157,7 +158,16 @@ export default {
         return extent
       }
       return null
+    },
+    validators () {
+      return {
+        title: [required],
+        scales: [v => v.length === 0 ? 'Map scales must be defined' : true]
+      }
     }
+  },
+  mounted () {
+    // this.$refs.form.validate()
   },
   methods: {
     setExtent (extent) {
@@ -201,5 +211,6 @@ label {
 }
 .map-preview {
   max-width: 900px;
+  margin-bottom: 22px;
 }
 </style>
