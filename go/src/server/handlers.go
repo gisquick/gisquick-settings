@@ -343,7 +343,8 @@ func (s *Server) handleDownload() http.HandlerFunc {
 		projectDir, _ = filepath.Abs(projectDir)
 		files, err := fs.ListDir(projectDir, false)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("FileServer error: %s", err.Error()), http.StatusInternalServerError)
+			log.Printf("Project download error: %s\n", err)
+			http.Error(w, "FileServer error", http.StatusInternalServerError)
 			return
 		}
 		for _, f := range *files {
@@ -375,6 +376,8 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 			http.Error(w, "FileServer Error", http.StatusInternalServerError)
 			return
 		}
+
+		// TODO: delete map cache
 		w.Write([]byte(""))
 	}
 }

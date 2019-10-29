@@ -80,6 +80,9 @@ export default {
     }
   },
   computed: {
+    pluginConnected () {
+      return this.$ws.pluginConnected
+    },
     projectPath () {
       return this.user && this.folder && `${this.user}/${this.folder}`
     },
@@ -97,13 +100,21 @@ export default {
       return this.uploadProgress && this.uploadProgress.files
     }
   },
+  activated () {
+    this.fetchLocalFiles()
+    const unwatch = this.$watch('pluginConnected', connected => {
+      if (connected && !this.loadingLocalFiles) {
+        this.fetchLocalFiles()
+      }
+    })
+    this.$once('hook:deactivated', unwatch)
+  },
   watch: {
     projectPath: {
       immediate: true,
       handler (path) {
         if (path) {
           this.fetchServerFiles()
-          this.fetchLocalFiles()
         } else {
           this.serverFiles = []
         }

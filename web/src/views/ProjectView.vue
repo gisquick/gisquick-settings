@@ -3,7 +3,7 @@
     <portal to="menu-breadcrumbs" v-if="pageVisible && projectConfig">
       <v-icon>keyboard_arrow_right</v-icon>
       <v-btn text color="orange" style="text-transform:none">
-        {{ projectConfig.title }}
+        {{ projectConfigOriginal.title }}
       </v-btn>
     </portal>
     <portal to="menu-actions" v-if="pageVisible">

@@ -82,8 +82,7 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 		return err
 	}
 	msg := fmt.Sprintf("%s:%s", name, jsonData)
-	ws.WriteMessage(websocket.TextMessage, []byte(msg))
-	return nil
+	return ws.WriteMessage(websocket.TextMessage, []byte(msg))
 }
 
 func (s *Server) apiRoutes() {
