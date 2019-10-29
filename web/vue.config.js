@@ -2,12 +2,11 @@ module.exports = {
   // transpileDependencies: ['vuetify'],
   publicPath: process.env.NODE_ENV === 'production' ? '/user/' : '/',
   assetsDir: 'static',
-  pages: process.env.NODE_ENV === 'production'
+  pages: process.env.NODE_ENV === 'development'
     ? {
       index: {
         entry: 'src/main.js',
-        template: 'index-prod.html',
-        filename: 'index.html'
+        template: 'index-dev.html'
       }
     }
     : undefined,
