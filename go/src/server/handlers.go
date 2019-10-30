@@ -366,7 +366,7 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
-		if user.Username != username {
+		if !user.IsSuperuser && user.Username != username {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -390,7 +390,7 @@ func (s *Server) handleSaveConfig() http.HandlerFunc {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
 		projectName := chi.URLParam(r, "name")
-		if user.Username != username {
+		if !user.IsSuperuser && user.Username != username {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -431,7 +431,7 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
 		projectName := chi.URLParam(r, "name")
-		if user.Username != username {
+		if !user.IsSuperuser && user.Username != username {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -516,7 +516,7 @@ func (s *Server) handleGetMap() http.HandlerFunc {
 		mapParam := r.URL.Query().Get("MAP")
 		username := strings.Split(mapParam, "/")[0]
 		user := r.Context().Value(contextKeyUser).(*User)
-		if user.Username != username {
+		if !user.IsSuperuser && user.Username != username {
 			http.Error(w, "Permission denied", http.StatusForbidden)
 			return
 		}
