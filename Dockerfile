@@ -1,9 +1,11 @@
 FROM node:12-alpine AS webapp
 MAINTAINER Marcel Dancak "dancakm@gmail.com"
 
-COPY ./web/ /web/
-WORKDIR /web/
+WORKDIR /web
+COPY ./web/package*.json ./
 RUN npm install
+
+COPY ./web ./
 RUN npm run build
 
 
