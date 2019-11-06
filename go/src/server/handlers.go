@@ -571,8 +571,9 @@ func (s *Server) handleDev() http.HandlerFunc {
 }
 
 func (s *Server) handleProxyRequest() http.HandlerFunc {
-	url, _ := url.Parse(s.config.AppServer)
+	appServerURL, _ := url.Parse(s.config.AppServer)
+	proxy := httputil.NewSingleHostReverseProxy(appServerURL)
 	return func(w http.ResponseWriter, r *http.Request) {
-		httputil.NewSingleHostReverseProxy(url).ServeHTTP(w, r)
+		proxy.ServeHTTP(w, r)
 	}
 }
