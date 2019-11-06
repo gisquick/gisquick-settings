@@ -7,7 +7,7 @@
 """
 import os
 import re
-import json
+import sys
 import urllib
 import configparser
 from urllib.parse import parse_qs
@@ -460,7 +460,13 @@ class WebGisPlugin(object):
             else:
                 children = []
                 for child_tree_node in tree_node.children():
-                    children.append(visit_node(child_tree_node))
+                    try:
+                        info = visit_node(child_tree_node)
+                        if info:
+                            children.append(info)
+                    except Exception as e:
+                        msg = "Failed to gather info from layer: '%s'" % child_tree_node.name()
+                        raise Exception(msg) from e
                 return {
                     "name": tree_node.name(),
                     "layers": children
@@ -562,9 +568,13 @@ class WebGisPlugin(object):
         still exist, they will be loaded and stored in 'WebGisPlugin.last_metadata' property.
         """
 
-        def callback(msg_type, payload=None):
+        def callback(msg):
+            msg_type = msg["type"]
             if msg_type == "ProjectInfo":
-                return json.dumps(self.get_project_info())
+                if QgsProject.instance().absolutePath():
+                    return self.get_project_info()
+                else:
+                    raise Exception("Project is not opened")
             elif msg_type == "ProjectDirectory":
                 return QgsProject.instance().absolutePath()
             elif msg_type == "PluginVersion":

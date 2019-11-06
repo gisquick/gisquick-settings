@@ -40,7 +40,7 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 		s.pluginsWs.Set(username, srcConn)
 
 		if appWs := s.appsWs.Get(username); appWs != nil {
-			appWs.WriteMessage(websocket.TextMessage, []byte("PluginConnected"))
+			appWs.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Connected"})
 		}
 
 		for {
@@ -62,7 +62,7 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 		}
 		s.pluginsWs.Set(username, nil)
 		if appWs := s.appsWs.Get(username); appWs != nil {
-			appWs.WriteMessage(websocket.TextMessage, []byte("PluginDisconnected"))
+			appWs.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Disconnected"})
 		}
 	}
 }
@@ -87,7 +87,6 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 				break
 			}
 			if bytes.Compare(msg, []byte("Ping")) == 0 {
-				srcConn.WriteMessage(websocket.TextMessage, []byte("Pong"))
 				continue
 			}
 
@@ -96,7 +95,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 					break // or better reply with error message?
 				}
 			} else {
-				srcConn.WriteMessage(websocket.TextMessage, []byte("PluginDisconnected"))
+				srcConn.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Disconnected"})
 			}
 		}
 		s.appsWs.Set(user.Username, nil)

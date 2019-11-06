@@ -15,8 +15,8 @@ export function createUpload (ws, files, project) {
   })
 
   let task
-  function onProgressMessage(e, msg) {
-    const data = JSON.parse(msg)
+  function onProgressMessage(msg) {
+    const data = msg.data
 
     Object.entries(data).forEach(([file, progress]) => {
       const fileUpload = info.files[file]
@@ -39,8 +39,8 @@ export function createUpload (ws, files, project) {
     }
   }
 
-  function onErrorMessage (e, msg) {
-    task.reject(msg.trim())
+  function onErrorMessage (msg) {
+    task.reject(msg.data.trim())
   }
 
   return {
@@ -49,7 +49,7 @@ export function createUpload (ws, files, project) {
       return new Promise((resolve, reject) => {
         ws.bind('UploadProgress', onProgressMessage)
         ws.bind('UploadError', onErrorMessage)
-        ws.sendJSON('SendFiles', { files, project })
+        ws.send('UploadFiles', { files, project })
         task = {
           resolve,
           reject,
@@ -62,7 +62,7 @@ export function createUpload (ws, files, project) {
         ws.unbind('UploadProgress', onProgressMessage)
         ws.unbind('UploadError', onErrorMessage)
         task.reject('aborted')
-        ws.sendJSON('AbortUpload', { project })
+        ws.send('AbortUpload', { project })
         task = null
       }
     }

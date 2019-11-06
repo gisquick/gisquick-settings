@@ -132,10 +132,14 @@ export default {
   methods: {
     fetchFiles () {
       this.fetchingLocalFiles = true
-      this.$ws.request('Files')
+      this.$ws.request('ProjectFiles')
         .then(resp => {
           this.fetchingLocalFiles = false
-          this.src = JSON.parse(resp)
+          this.src = resp.data
+        })
+        .catch(err => {
+          this.fetchingLocalFiles = false
+          this.$notification.error(err.data || 'Error')
         })
     },
     fetchServerFiles () {

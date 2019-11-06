@@ -41,9 +41,6 @@
 </template>
 
 <script>
-import Vue from 'vue'
-import WebsocketMessenger from '@/ws.js'
-
 import Themeable from 'vuetify/lib/mixins/themeable'
 
 const ThemeableToolbar = {
@@ -62,17 +59,6 @@ export default {
     pluginStatusImg () {
       return this.$ws.pluginConnected ? require('./assets/qgis-icon32.svg') : require('./assets/qgis-icon-black32.svg')
     }
-  },
-  created () {
-    const protocol = location.protocol.endsWith('s:') ? 'wss' : 'ws'
-    const socket = WebsocketMessenger(`${protocol}://${location.host}/ws/app`)
-    Vue.util.defineReactive(socket, 'connected')
-    Vue.util.defineReactive(socket, 'pluginConnected')
-    Vue.prototype.$ws = socket
-  },
-  beforeDestroy () {
-    this.$ws.close()
-    this.$ws = null
   },
   methods: {
     logout () {

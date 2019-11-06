@@ -1,6 +1,7 @@
 
 export default function WebsocketMessenger (url) {
   let listeners = []
+  let openListeners = []
   const activeRequests = {}
   const socket = new WebSocket(url)
   let timer = null
@@ -15,20 +16,14 @@ export default function WebsocketMessenger (url) {
     unbind (type, callback) {
       listeners = listeners.filter(l => l.type !== type || l.callback !== callback)
     },
-    send (msg) {
-      socket.send(msg)
+    send (name, data) {
+      const msg = { type: name, data }
+      socket.send(JSON.stringify(msg))
     },
-    sendJSON (name, data) {
-      socket.send(name + ":" + JSON.stringify(data))
-    },
-    request (name, data = null) {
+    request (name, data) {
       return new Promise((resolve, reject) => {
         activeRequests[name] = { resolve, reject }
-        if (data) {
-          this.sendJSON(name, data)
-        } else {
-          this.send(name)
-        }
+        this.send(name, data)
       })
     },
     close () {
@@ -37,48 +32,45 @@ export default function WebsocketMessenger (url) {
         timer = null
       }
       socket.close()
+    },
+    onopen () {
+      return new Promise(resolve => {
+        if (ws.connected) {
+          resolve()
+        } else {
+          openListeners.push(resolve)
+        }
+      })
     }
   }
 
   socket.onopen = () => {
     ws.connected = true
-    socket.send('PingPlugin')
+    openListeners.forEach(cb => cb())
+    openListeners = []
+    ws.send('PluginStatus')
   }
   socket.onclose = () => {
     ws.connected = false
-    
   }
   socket.onmessage = (e) => {
-    if (e.data === 'PongPlugin') {
-      ws.pluginConnected = true
-      return
-    }
-    if (e.data === 'PluginConnected') {
-      ws.pluginConnected = true
-    }
-    if (e.data === 'PluginDisconnected') {
-      ws.pluginConnected = false
+    const msg = JSON.parse(e.data)
+    if (msg.type === 'PluginStatus') {
+      ws.pluginConnected = msg.data === 'Connected'
     }
 
-    const breakpoint = e.data.indexOf(':')
-    let type, data
-    if (breakpoint !== -1) {
-      type = e.data.substring(0, breakpoint)
-      data = e.data.substring(breakpoint + 1)
-    } else {
-      type = e.data
-      data = ''
+    if (activeRequests[msg.type]) {
+      if (msg.status === 'error') {
+        activeRequests[msg.type].reject(msg)
+      } else {
+        activeRequests[msg.type].resolve(msg)
+      }
+      delete activeRequests[msg.type]
     }
-    if (activeRequests[type]) {
-      activeRequests[type].resolve(data)
-      delete activeRequests[type]
-    }
-    listeners.filter(l => l.type === type).forEach(l => {
-      l.callback(e, data)
-    })
+    listeners.filter(l => l.type === msg.type).forEach(l => l.callback(msg))
   }
   timer = setInterval(() => {
     socket.send('Ping')
-  }, 25 * 1000)
+  }, 30 * 1000)
   return ws
 }

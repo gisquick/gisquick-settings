@@ -125,12 +125,16 @@ export default {
     fetchLocalFiles () {
       if (this.$ws.pluginConnected) {
         this.loadingLocalFiles = true
-        this.$ws.request('Files')
+        this.$ws.request('ProjectFiles')
           .then(resp => {
             this.loadingLocalFiles = false
-            const data = JSON.parse(resp)
+            const data = resp.data
             this.localFiles = data.files
             this.localDirectory = data.directory
+          })
+          .catch(err => {
+            this.loadingLocalFiles = false
+            this.$notification.error(err.data || 'Error')
           })
       }
     },

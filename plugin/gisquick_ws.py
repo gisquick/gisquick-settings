@@ -1,8 +1,9 @@
 import os
 import sys
+import json
 import ctypes
 import _ctypes
-import traceback
+from traceback import TracebackException
 
 
 if sys.platform.startswith("linux"):
@@ -54,17 +55,25 @@ class GisquickWs():
 
         @ctypes.CFUNCTYPE(ctypes.c_char_p, ctypes.c_char_p)
         def callback_wrapper(msg):
+            msg = json.loads(msg)
             try:
-                parts = msg.decode().split(":", 1)
-                msg_type = parts[0]
-                payload = parts[1] if len(parts) == 2 else None
-                resp = callback(msg_type, payload)
-                if resp:
-                    return resp.encode("utf-8")
+                ret_value = callback(msg) or ""
+                resp = {
+                    "type": msg["type"],
+                    "status": "ok",
+                    "data": ret_value
+                }
             except Exception as e:
-                traceback.print_exc()
-                # traceback.print_stack()
-                # raise
+                resp = {
+                    "type": msg["type"],
+                    "status": "error",
+                    "data": str(e)
+                }
+                if e.__cause__:
+                    t = TracebackException.from_exception(e.__cause__)
+                    resp["traceback"] = "".join(t.format())
+
+            return json.dumps(resp).encode("utf-8")
 
         try:
             return self._lib.Start(go_string(url), go_string(username), go_string(password), callback_wrapper)
@@ -75,9 +84,12 @@ class GisquickWs():
         self._lib.Stop()
 
     def send(self, name, data=None):
-        msg = "%s:%s" % (name, data) if data else name
-        self._lib.SendMessage(go_string(msg))
-
+        msg = {
+            "type": name
+        }
+        if data is not None:
+            msg["data"] = data
+        self._lib.SendMessage(go_string(json.dumps(msg)))
 
 gisquick_ws = GisquickWs()
 

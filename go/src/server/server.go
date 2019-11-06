@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -28,6 +27,17 @@ type User struct {
 	Email       string `json:"email"`
 	IsGuest     bool   `json:"is_guest"`
 	IsSuperuser bool   `json:"is_superuser"`
+}
+
+type message struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data,omitempty"`
+}
+
+// Message with text data
+type plainMessage struct {
+	Type string `json:"type"`
+	Data string `json:"data"`
 }
 
 /* Structure for managing websocket connections for concurrent access */
@@ -81,8 +91,7 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("%s:%s", name, jsonData)
-	return ws.WriteMessage(websocket.TextMessage, []byte(msg))
+	return ws.WriteJSON(message{Type: name, Data: jsonData})
 }
 
 func (s *Server) apiRoutes() {

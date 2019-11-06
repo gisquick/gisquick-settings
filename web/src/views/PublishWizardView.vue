@@ -114,10 +114,6 @@ export default {
       }
     }
   },
-  created () {
-    // this.$ws.bind('PluginConnected', this.fetchProjectInfo)
-    // this.fetchProjectInfo()
-  },
   activated () {
     this.$ws.bind('ProjectChanged', this.onProjectChange)
     if (!this.projectInfo) {
@@ -126,9 +122,6 @@ export default {
   },
   deactivated () {
     this.$ws.unbind('ProjectChanged', this.onProjectChange)
-  },
-  beforeDestroy () {
-    // this.$ws.unbind('PluginConnected', this.fetchProjectInfo)
   },
   beforeRouteLeave (to, from, next) {
     this.resetProjectData()
@@ -165,9 +158,15 @@ export default {
       this.fetchProjectInfo()
     },
     fetchProjectInfo () {
+      if (!this.$ws.pluginConnected) {
+        return
+      }
       this.$ws.request('ProjectInfo')
         .then(resp => {
-          this.projectInfo = JSON.parse(resp)
+          this.projectInfo = resp.data
+        })
+        .catch(err => {
+          this.$notification.error(err.data || 'Error')
         })
     },
     publish () {
