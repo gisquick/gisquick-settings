@@ -67,7 +67,7 @@
             <v-list-item-group>
               <v-layout row align-center @click.stop="">
                 <v-divider/>
-                <small class="mx-2 grey--text">Use layer extent</small>
+                <small class="mx-2 my-1 grey--text">Use layer extent</small>
                 <v-divider/>
               </v-layout>
             </v-list-item-group>

@@ -22,6 +22,12 @@ def go_string(s):
     return GoString(s.encode("utf-8"), len(s))
 
 
+class WsError(Exception):
+    def __init__(self, msg, code=500):
+        super().__init__(msg)
+        self.code = code
+
+
 class GisquickWs():
     """Wrapper for Gisquick websocket compiled lib"""
 
@@ -50,7 +56,7 @@ class GisquickWs():
             del self._lib
         """
 
-    def start(self, url, username, password, callback):
+    def start(self, url, username, password, client_info, callback):
         self._load_lib()
 
         @ctypes.CFUNCTYPE(ctypes.c_char_p, ctypes.c_char_p)
@@ -60,13 +66,13 @@ class GisquickWs():
                 ret_value = callback(msg) or ""
                 resp = {
                     "type": msg["type"],
-                    "status": "ok",
+                    "status": 200,
                     "data": ret_value
                 }
             except Exception as e:
                 resp = {
                     "type": msg["type"],
-                    "status": "error",
+                    "status": e.code if isinstance(e, WsError) else 500,
                     "data": str(e)
                 }
                 if e.__cause__:
@@ -76,7 +82,13 @@ class GisquickWs():
             return json.dumps(resp).encode("utf-8")
 
         try:
-            return self._lib.Start(go_string(url), go_string(username), go_string(password), callback_wrapper)
+            return self._lib.Start(
+                go_string(url),
+                go_string(username),
+                go_string(password),
+                go_string(client_info),
+                callback_wrapper
+            )
         finally:
             self._unload_lib()
 

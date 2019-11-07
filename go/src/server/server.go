@@ -30,14 +30,15 @@ type User struct {
 }
 
 type message struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data,omitempty"`
+	Type   string          `json:"type"`
+	Status int             `json:"status,omitempty"`
+	Data   json.RawMessage `json:"data,omitempty"`
 }
 
-// Message with text data
-type plainMessage struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
+type genericMessage struct {
+	Type   string      `json:"type"`
+	Status int         `json:"status,omitempty"`
+	Data   interface{} `json:"data"`
 }
 
 /* Structure for managing websocket connections for concurrent access */

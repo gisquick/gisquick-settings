@@ -12,8 +12,8 @@ static inline char* call_message_callback(message_callback ptr, char *msg) {
 import "C"
 import (
 	"client"
-	"fmt"
 	"log"
+	"runtime"
 	"unsafe"
 
 	"github.com/gorilla/websocket"
@@ -22,8 +22,9 @@ import (
 var c *client.Client
 
 //export Start
-func Start(url string, user string, password string, fn C.message_callback) int {
+func Start(url, user, password, clientInfo string, fn C.message_callback) int {
 	c = client.NewClient(url, user, password)
+	c.ClientInfo = clientInfo
 	c.OnMessageCallback = func(message []byte) string {
 		cmsg := C.CString(string(message))
 		defer C.free(unsafe.Pointer(cmsg))
@@ -34,10 +35,12 @@ func Start(url string, user string, password string, fn C.message_callback) int 
 		return C.GoString(resp)
 	}
 	if err := c.Start(); err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		c = nil
+		runtime.GC()
 		return 1
 	}
+	runtime.GC()
 	return 0
 }
 
@@ -54,21 +57,15 @@ func SendMessage(msg string) {
 	if c == nil {
 		return
 	}
-	fmt.Printf("SendMessage: %s\n", msg)
 	if c.WsConn == nil {
-		fmt.Println("Connection error")
+		log.Println("WS Connection is not established")
 		return
 	}
 	err := c.WsConn.WriteMessage(websocket.TextMessage, []byte(msg))
 	if err != nil {
-		log.Println("write:", err)
+		log.Printf("Failed to send WS message: %s\n", err)
 		return
 	}
 }
 
 func main() {}
-
-/*
-Build as library:
-go build -buildmode=c-shared -o gisquick.so cmd/plugin/main.go
-*/

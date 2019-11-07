@@ -24,14 +24,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/gorilla/websocket"
 )
 
 func (s *Server) handlePluginWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 		username := user.Username
-		log.Printf("Plugin WS: %s\n", username)
+		log.Printf("Plugin WS: %s \n", username)
+		log.Printf("Client: %s\n", r.Header.Get("User-Agent"))
 		srcConn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -40,7 +40,8 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 		s.pluginsWs.Set(username, srcConn)
 
 		if appWs := s.appsWs.Get(username); appWs != nil {
-			appWs.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Connected"})
+			info := map[string]string{"client": r.Header.Get("User-Agent")}
+			appWs.WriteJSON(genericMessage{Type: "PluginStatus", Status: 200, Data: info})
 		}
 
 		for {
@@ -56,13 +57,11 @@ func (s *Server) handlePluginWs() http.HandlerFunc {
 				if err = appWs.WriteMessage(msgType, msg); err != nil {
 					break // or better reply with error message?
 				}
-			} else {
-				srcConn.WriteMessage(websocket.TextMessage, []byte("AppDisconnected"))
 			}
 		}
 		s.pluginsWs.Set(username, nil)
 		if appWs := s.appsWs.Get(username); appWs != nil {
-			appWs.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Disconnected"})
+			appWs.WriteJSON(genericMessage{Type: "PluginStatus", Status: 503})
 		}
 	}
 }
@@ -95,7 +94,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 					break // or better reply with error message?
 				}
 			} else {
-				srcConn.WriteJSON(plainMessage{Type: "PluginStatus", Data: "Disconnected"})
+				srcConn.WriteJSON(genericMessage{Type: "PluginStatus", Status: 503})
 			}
 		}
 		s.appsWs.Set(user.Username, nil)
@@ -232,6 +231,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 }
 
 func (s *Server) handleNewUpload() http.HandlerFunc {
+	qgisExtRegex := regexp.MustCompile("(?i).*\\.(qgs|qgz)$")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 
@@ -292,7 +292,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
 			return
 		}
-		qgisExtRegex := regexp.MustCompile("(?i).*\\.(qgs|qgz)$")
+
 		hasQgisProject := false
 		for _, f := range archiveReader.File[1:] {
 			if !strings.HasPrefix(f.Name, rootFile.Name) {

@@ -9,12 +9,13 @@ import os
 import re
 import sys
 import urllib
+import platform
 import configparser
 from urllib.parse import parse_qs
 
 # Import the PyQt and QGIS libraries
 import PyQt5.uic
-from qgis.core import QgsMapLayer, QgsProject, QgsLayerTreeLayer, QgsLayoutItemLabel
+from qgis.core import Qgis, QgsMapLayer, QgsProject, QgsLayerTreeLayer, QgsLayoutItemLabel
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
@@ -23,7 +24,7 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
 from . import resources_rc
 
 from .utils import scales_to_resolutions, resolutions_to_scales, to_decimal_array
-from .gisquick_ws import gisquick_ws
+from .gisquick_ws import gisquick_ws, WsError
 
 
 __metadata__ = configparser.ConfigParser()
@@ -581,12 +582,13 @@ class WebGisPlugin(object):
             if msg_type == "ProjectInfo":
                 if QgsProject.instance().absolutePath():
                     return self.get_project_info()
-                else:
-                    raise Exception("Project is not opened")
+                raise WsError("Project is not opened", 404)
+
             elif msg_type == "ProjectDirectory":
-                return QgsProject.instance().absolutePath()
-            elif msg_type == "PluginVersion":
-                return __metadata__["general"].get("version")
+                dir_path = QgsProject.instance().absolutePath()
+                if dir_path:
+                    return dir_path
+                raise WsError("Project is not opened", 404)
             else:
                 raise ValueError("Unknown message type: %s" % msg_type)
 
@@ -603,12 +605,15 @@ class WebGisPlugin(object):
                 username = settings.value("username")
                 password = settings.value("password")
 
+            plugin_ver = __metadata__["general"].get("version")
+            client_info = "GisquickPlugin/%s (%s %s; QGIS %s)" % (plugin_ver, platform.system(), platform.machine(), Qgis.QGIS_VERSION)
+
             class WebsocketServer(QThread):
                 finished = QtCore.pyqtSignal(int)
 
                 def run(self):
                     print("Starting WS", "server:", server_url, "user:", username)
-                    res = gisquick_ws.start(server_url, username, password, callback)
+                    res = gisquick_ws.start(server_url, username, password, client_info, callback)
                     self.finished.emit(res)
 
             def on_finished(res):

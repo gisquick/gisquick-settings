@@ -8,6 +8,7 @@ export default function WebsocketMessenger (url) {
   const ws = {
     connected: false,
     pluginConnected: false,
+    clientInfo: '',
 
     bind (type, callback) {
       listeners.push({ type, callback })
@@ -56,11 +57,13 @@ export default function WebsocketMessenger (url) {
   socket.onmessage = (e) => {
     const msg = JSON.parse(e.data)
     if (msg.type === 'PluginStatus') {
-      ws.pluginConnected = msg.data === 'Connected'
+      const connected = msg.status === 200
+      ws.pluginConnected = connected
+      ws.clientInfo = connected && msg.data.client
     }
 
     if (activeRequests[msg.type]) {
-      if (msg.status === 'error') {
+      if (msg.status && msg.status >= 400) {
         activeRequests[msg.type].reject(msg)
       } else {
         activeRequests[msg.type].resolve(msg)

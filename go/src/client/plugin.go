@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"fs"
 	"io"
@@ -30,16 +31,19 @@ type Client struct {
 	WsConn            *websocket.Conn
 	interrupt         chan int
 	OnMessageCallback func([]byte) string
+	ClientInfo        string
 }
 
 type message struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data,omitempty"`
+	Type   string          `json:"type"`
+	Status int             `json:"status,omitempty"`
+	Data   json.RawMessage `json:"data,omitempty"`
 }
 
-type plainMessage struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
+type genericMessage struct {
+	Type   string      `json:"type"`
+	Status int         `json:"status,omitempty"`
+	Data   interface{} `json:"data"`
 }
 
 // NewClient export
@@ -53,21 +57,17 @@ func NewClient(url, user, password string) *Client {
 	return &c
 }
 
-// sends message with object data
-func (c *Client) sendJSONMessage(msgType string, data interface{}) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	return c.WsConn.WriteJSON(message{Type: msgType, Data: jsonData})
+// sends message with status code 200 ("ok")
+func (c *Client) sendResponseMessage(msgType string, data interface{}) error {
+	return c.WsConn.WriteJSON(genericMessage{Type: msgType, Status: 200, Data: data})
 }
 
-// sends message with text data
-func (c *Client) sendTextMessage(msgType string, data string) error {
-	return c.WsConn.WriteJSON(plainMessage{Type: msgType, Data: data})
+// sends error message
+func (c *Client) sendErrorMessage(msgType string, data string) error {
+	return c.WsConn.WriteJSON(genericMessage{Type: msgType, Status: 500, Data: data})
 }
 
-func (c *Client) parseStringData(data string) (string, error) {
+func (c *Client) readTextData(data string) (string, error) {
 	var msg message
 	if err := json.Unmarshal([]byte(data), &msg); err != nil {
 		return "", err
@@ -93,7 +93,8 @@ func (h *statusHandler) Accept(msgType string) bool {
 }
 
 func (h *statusHandler) Process(msg message) error {
-	return h.client.sendTextMessage("PluginStatus", "Connected")
+	info := map[string]string{"status": "connected", "client": h.client.ClientInfo}
+	return h.client.sendResponseMessage("PluginStatus", info)
 }
 
 type filesHandler struct {
@@ -112,7 +113,10 @@ func (h *filesHandler) Process(msg message) error {
 
 	// TODO: better error handling
 	r := h.client.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-	directory, _ := h.client.parseStringData(r)
+	directory, _ := h.client.readTextData(r)
+	if directory == "" {
+		return errors.New("Project is not open")
+	}
 	files, err := fs.ListDir(directory, true)
 
 	if err != nil {
@@ -122,10 +126,7 @@ func (h *filesHandler) Process(msg message) error {
 		(*files)[i].Path = filepath.ToSlash(f.Path)
 	}
 	resp := filesMsg{Directory: directory, Files: *files}
-	if err = h.client.sendJSONMessage(msg.Type, resp); err != nil {
-		return err
-	}
-	return nil
+	return h.client.sendResponseMessage(msg.Type, resp)
 }
 
 type uploadHandler struct {
@@ -168,7 +169,7 @@ func (h *uploadHandler) Process(msg message) error {
 
 			// TODO: better error handling
 			r := h.client.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-			directory, _ := h.client.parseStringData(r)
+			directory, _ := h.client.readTextData(r)
 
 			for _, f := range params.Files {
 				// ext := filepath.Ext(f.Path)
@@ -226,7 +227,7 @@ func (h *uploadHandler) Process(msg message) error {
 		}
 		if resp.StatusCode >= 400 {
 			fmt.Println("Send UploadError")
-			if err = h.client.sendTextMessage("UploadError", string(respData)); err != nil {
+			if err = h.client.sendErrorMessage("UploadError", string(respData)); err != nil {
 				fmt.Printf("Failed to send error message: %s\n", err)
 			}
 		}
@@ -248,7 +249,7 @@ func (c *Client) login() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Authentication failed")
+		return errors.New("Authentication failed")
 	}
 	return nil
 }
@@ -286,7 +287,9 @@ func (c *Client) Start() error {
 		HandshakeTimeout: 30 * time.Second,
 		Jar:              c.httpClient.Jar,
 	}
-	wsConn, _, err := dialer.Dial(u.String(), nil)
+	header := make(http.Header, 1)
+	header.Set("User-Agent", c.ClientInfo)
+	wsConn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		return err
 	}
@@ -320,7 +323,8 @@ func (c *Client) Start() error {
 			for _, h := range messageHandlers {
 				if h.Accept(msg.Type) {
 					if err := h.Process(msg); err != nil {
-						fmt.Println(err)
+						log.Println(err)
+						c.sendErrorMessage(msg.Type, err.Error())
 					}
 					continue MESSAGE
 				}
