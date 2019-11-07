@@ -38,7 +38,7 @@
           type="number"
           class="mr-2"
         />
-        <v-menu bottom max-height="400" min-width="180">
+        <v-menu bottom max-height="400">
           <template v-slot:activator="{ on }">
             <v-btn
               v-on="on"
@@ -49,12 +49,20 @@
             </v-btn>
           </template>
           <v-list dense>
-            <v-list-item @click="enableDrawTool">Draw on map</v-list-item>
+            <v-list-item @click="enableDrawTool">
+              <v-list-item-content>Draw on map</v-list-item-content>
+              <v-list-item-icon>
+                <v-icon>picture_in_picture</v-icon>
+              </v-list-item-icon>
+            </v-list-item>
             <v-list-item
               v-if="allLayersExtent"
               @click="setExtent(allLayersExtent)"
             >
-              Extent of all layers
+              <v-list-item-content>Extent of all layers</v-list-item-content>
+              <v-list-item-icon>
+                <v-icon>zoom_out_map</v-icon>
+              </v-list-item-icon>
             </v-list-item>
             <v-list-item-group>
               <v-layout row align-center @click.stop="">

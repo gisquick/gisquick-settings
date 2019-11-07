@@ -10,6 +10,11 @@
       :dest-files="dest"
       :files-progress="filesUploadProgress"
     >
+      <template v-slot:src-toolbar>
+        <v-btn icon @click="fetchLocalFiles">
+          <v-icon>refresh</v-icon>
+        </v-btn>
+      </template>
       <template v-slot:dest-toolbar>
         <v-btn icon @click="fetchServerFiles">
           <v-icon>refresh</v-icon>
@@ -124,13 +129,13 @@ export default {
     }
   },
   activated () {
-    this.fetchFiles()
+    this.fetchLocalFiles()
     if (this.projectServerDir) {
       this.fetchServerFiles()
     }
   },
   methods: {
-    fetchFiles () {
+    fetchLocalFiles () {
       this.fetchingLocalFiles = true
       this.$ws.request('ProjectFiles')
         .then(resp => {
