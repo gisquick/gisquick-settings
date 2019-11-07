@@ -12,7 +12,7 @@
       hide-default-footer
     >
       <template v-slot:item.title="{ item, value }">
-        <router-link :to="{path: item.project}">{{ value }}</router-link>
+        <router-link :to="{path: '/'+item.project}">{{ value }}</router-link>
       </template>
       <template v-slot:item.url="{ value }">
         <a :href="value" target="_blank">
@@ -74,6 +74,9 @@ export default {
   name: 'Projects',
   mixins: [ Page ],
   components: { ProjectsMenu },
+  props: {
+    user: String
+  },
   data () {
     return {
       loading: false
@@ -96,13 +99,17 @@ export default {
     //   return Object.assign({}, ...this.projects.map(p => ({ [p.project]: p.project.split('/').slice(1).join('/') })))
     // }
   },
+  watch: {
+    user: 'fetchProjects'
+  },
   activated () {
     this.fetchProjects()
   },
   methods: {
     fetchProjects () {
       this.loading = true
-      this.$http.get('/projects.json')
+      const url = this.user ? `/${this.user}/projects.json` : '/projects.json'
+      this.$http.get(url)
         .then(resp => {
           this.$root.projects = resp.data.projects
           this.loading = false

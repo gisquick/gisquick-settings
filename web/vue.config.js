@@ -67,7 +67,7 @@ module.exports = {
         secure: false,
         ws: true
       },
-      '^/login|^/logout|^/project.json|^/projects.json': {
+      '^/login|^/logout|^/project.json|/projects.json': {
         target: 'http://localhost:8000',
         changeOrigin: true
       },
