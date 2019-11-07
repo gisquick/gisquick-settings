@@ -21,6 +21,12 @@
           <v-icon>refresh</v-icon>
         </v-btn>
       </template>
+      <template v-slot:src-no-content>
+        <v-layout fill-height align-center justify-center>
+          <v-icon color="red" class="mx-2">error</v-icon>
+          <div class="error--text">{{ localFilesError }}</div>
+        </v-layout>
+      </template>
     </files-browser>
     <div class="toolbar mx-1 my-1">
       <v-spacer/>
@@ -74,6 +80,7 @@ export default {
       localDirectory: '',
       localFiles: [],
       serverFiles: [],
+      localFilesError: '',
       loadingServerFiles: false,
       loadingLocalFiles: false,
       uploadProgress: null
@@ -101,6 +108,7 @@ export default {
     }
   },
   activated () {
+    this.$ws.bind('ProjectChanged', this.fetchLocalFiles)
     this.fetchLocalFiles()
     const unwatch = this.$watch('pluginConnected', connected => {
       if (connected && !this.loadingLocalFiles) {
@@ -108,6 +116,9 @@ export default {
       }
     })
     this.$once('hook:deactivated', unwatch)
+  },
+  deactivated () {
+    this.$ws.unbind('ProjectChanged', this.fetchLocalFiles)
   },
   watch: {
     projectPath: {
@@ -125,6 +136,7 @@ export default {
     fetchLocalFiles () {
       if (this.$ws.pluginConnected) {
         this.loadingLocalFiles = true
+        this.localFilesError = ''
         this.$ws.request('ProjectFiles')
           .then(resp => {
             this.loadingLocalFiles = false
@@ -134,7 +146,9 @@ export default {
           })
           .catch(err => {
             this.loadingLocalFiles = false
-            this.$notification.error(err.data || 'Error')
+            this.localFiles = []
+            this.localDirectory = ''
+            this.localFilesError = err.data || 'Faild to list project files'
           })
       }
     },

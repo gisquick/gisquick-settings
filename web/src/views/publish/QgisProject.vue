@@ -1,11 +1,21 @@
 <template>
-    <div
-      v-if="route"
-      :is="route.component"
-      v-bind="route.props"
-      class="box grow"
-      @status="updateStatus"
-    />
+  <div
+    v-if="route"
+    :is="route.component"
+    v-bind="route.props"
+    class="box grow"
+    @status="updateStatus"
+  />
+  <v-layout
+    v-else-if="!store.loadingProjectInfo"
+    class="column box grow px-2 py-2 align-center justify-center"
+  >
+    <h2 class="mb-4">
+      <v-icon size="30" color="orange" class="mr-1">warning</v-icon>
+      <span>QGIS project data is not available</span>
+    </h2>
+    <span>Please open the project you would like to publish in QGIS desktop application</span>
+  </v-layout>
 </template>
 
 <script>

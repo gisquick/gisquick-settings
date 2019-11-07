@@ -98,7 +98,7 @@ class Node(object):
 
 # from qgis.PyQt import QtCore
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QTimer
 
 class WebGisPlugin(object):
 
@@ -560,6 +560,14 @@ class WebGisPlugin(object):
     def on_project_change(self, *args):
         gisquick_ws.send("ProjectChanged")
 
+    def on_project_closed(self, *args):
+        def debounced():
+            # filter events caused by switching between projects
+            if not QgsProject.instance().absoluteFilePath():
+                gisquick_ws.send("ProjectChanged")
+
+        QTimer.singleShot(300, debounced)
+
     def toggle_tool(self, active):
         """Display dialog window for publishing current project.
 
@@ -616,7 +624,9 @@ class WebGisPlugin(object):
             # project.isDirtyChanged.connect(self.on_project_change)
             project.readProject.connect(self.on_project_change)
             project.projectSaved.connect(self.on_project_change)
+            project.cleared.connect(self.on_project_closed)
         else:
             gisquick_ws.stop()
             project.readProject.disconnect(self.on_project_change)
             project.projectSaved.disconnect(self.on_project_change)
+            project.cleared.disconnect(self.on_project_closed)

@@ -73,6 +73,7 @@ export default {
   components: { PluginDisconnected, Timeline },
   data () {
     return {
+      loadingProjectInfo: false,
       projectInfo: null,
       projectConfig: null,
       serverFiles: null,
@@ -161,12 +162,15 @@ export default {
       if (!this.$ws.pluginConnected) {
         return
       }
+      this.loadingProjectInfo = true
       this.$ws.request('ProjectInfo')
         .then(resp => {
           this.projectInfo = resp.data
+          this.loadingProjectInfo = false
         })
         .catch(err => {
-          this.$notification.error(err.data || 'Error')
+          this.loadingProjectInfo = false
+          // this.$notification.error(err.data || 'Error')
         })
     },
     publish () {

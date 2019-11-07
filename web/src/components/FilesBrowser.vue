@@ -17,6 +17,7 @@
       </v-toolbar>
       <template v-if="$ws.pluginConnected">
         <v-text-field
+          v-if="srcPath"
           label="Directory"
           :value="srcPath"
           class="shrink mt-2 px-4"
@@ -37,6 +38,7 @@
         </v-layout>
         <div v-else class="scroll-container mt-1">
           <v-treeview
+            v-if="srcPath"
             :items="localFilesTree"
             class="mt-2 px-2"
             dense
@@ -62,6 +64,7 @@
               </v-layout>
             </template>
           </v-treeview>
+          <slot v-else name="src-no-content"/>
         </div>
       </template>
       <plugin-disconnected v-else class="disconnect-msg"/>
