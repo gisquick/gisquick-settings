@@ -72,6 +72,23 @@ func (c *Client) sendErrorMessage(msgType string, data string) error {
 	return c.WsConn.WriteJSON(genericMessage{Type: msgType, Status: 500, Data: data})
 }
 
+// send message to plugin handler and return response message
+func (c *Client) propagateMessage(msgType string, data interface{}) (*message, error) {
+	request, err := json.Marshal(genericMessage{Type: msgType, Data: data})
+	if err != nil {
+		return nil, err
+	}
+	resp := c.OnMessageCallback(request)
+	if resp == "" {
+		return nil, errors.New("Empty response")
+	}
+	var msg message
+	if err = json.Unmarshal([]byte(resp), &msg); err != nil {
+		return nil, fmt.Errorf("Invalid message: %s (%s)", resp, err)
+	}
+	return &msg, nil
+}
+
 func (c *Client) readTextData(data string) (string, error) {
 	var msg message
 	if err := json.Unmarshal([]byte(data), &msg); err != nil {
@@ -105,12 +122,16 @@ func (c *Client) handleProjectFiles(msg message) error {
 		Files     []fs.File `json:"files"`
 	}
 
-	// TODO: better error handling
-	r := c.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-	directory, _ := c.readTextData(r)
-	if directory == "" {
-		return errors.New("Project is not open")
+	projDirMsg, err := c.propagateMessage("ProjectDirectory", nil)
+	if err != nil {
+		return errors.New("Failed to get project directory")
 	}
+	if projDirMsg.Status != 200 {
+		projDirMsg.Type = msg.Type
+		return c.WsConn.WriteJSON(projDirMsg)
+	}
+	var directory string
+	json.Unmarshal(projDirMsg.Data, &directory)
 	files, err := fs.ListDir(directory, true)
 
 	if err != nil {
@@ -141,6 +162,17 @@ func (c *Client) handleUploadFiles(msg message) error {
 		return err
 	}
 
+	projDirMsg, err := c.propagateMessage("ProjectDirectory", nil)
+	if err != nil {
+		return errors.New("Failed to get project directory")
+	}
+	if projDirMsg.Status != 200 {
+		projDirMsg.Type = msg.Type
+		return c.WsConn.WriteJSON(projDirMsg)
+	}
+	var directory string
+	json.Unmarshal(projDirMsg.Data, &directory)
+
 	go func() {
 		readBody, writeBody := io.Pipe()
 		defer readBody.Close()
@@ -152,10 +184,6 @@ func (c *Client) handleUploadFiles(msg message) error {
 			compressRegex := regexp.MustCompile("(?i).*\\.(qgs|svg|json|sqlite|gpkg|geojson)$")
 			defer writeBody.Close()
 			writer.WriteField("changes", string(msg.Data))
-
-			// TODO: better error handling
-			r := c.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-			directory, _ := c.readTextData(r)
 
 			for _, f := range params.Files {
 				// ext := filepath.Ext(f.Path)
