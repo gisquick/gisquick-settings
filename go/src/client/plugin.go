@@ -198,29 +198,27 @@ func (c *Client) handleUploadFiles(msg message) error {
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
-			fmt.Println(err)
-			c.WsConn.WriteJSON(message{Type: "UploadError"})
+			log.Printf("Failed to execute upload request: %s\n", err)
+			c.sendErrorMessage("UploadError", "Upload error")
 			return
 		}
 		defer resp.Body.Close()
 		c.cancelUpload = nil
 
-		fmt.Println("Status", resp.StatusCode)
+		log.Println("Upload response:", resp.StatusCode)
 
 		respData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("Failed to read upload response: %s\n", err)
 		}
 		if resp.StatusCode >= 400 {
-			fmt.Println("Send UploadError")
 			if err = c.sendErrorMessage("UploadError", string(respData)); err != nil {
-				fmt.Printf("Failed to send error message: %s\n", err)
+				log.Printf("Failed to send error message: %s\n", err)
 			}
 		}
-		fmt.Println(string(respData))
 		err = <-errChan
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}()
 	return nil
@@ -268,7 +266,6 @@ func (c *Client) Start() error {
 		u.Scheme = "ws"
 	}
 	u.Path = fmt.Sprintf("/ws/plugin")
-	log.Printf("connecting to %s", u.String())
 
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -292,7 +289,7 @@ func (c *Client) Start() error {
 		for {
 			_, rawMessage, err := wsConn.ReadMessage()
 			if err != nil {
-				log.Println("read:", err)
+				log.Println("WS read error:", err)
 				return
 			}
 			var msg message
@@ -326,13 +323,11 @@ func (c *Client) Start() error {
 		case <-done:
 			return nil
 		case <-c.interrupt:
-			log.Println("interrupt")
-
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			err := c.WsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
-				log.Println("write close:", err)
+				log.Println("WS close error:", err)
 				return nil
 			}
 			select {
