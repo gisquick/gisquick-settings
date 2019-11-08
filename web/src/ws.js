@@ -12,7 +12,7 @@ export default function WebsocketMessenger (url) {
 
     bind (type, callback) {
       listeners.push({ type, callback })
-      return callback
+      return () => this.unbind(type, callback)
     },
     unbind (type, callback) {
       listeners = listeners.filter(l => l.type !== type || l.callback !== callback)

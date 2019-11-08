@@ -60,7 +60,6 @@
 </template>
 
 <script>
-import _omit from 'lodash/omit'
 import { basename, extname } from 'path'
 import { filterLayers, scalesToResolutions } from '@/utils'
 import Page from '@/mixins/Page'
@@ -73,7 +72,6 @@ export default {
   components: { PluginDisconnected, Timeline },
   data () {
     return {
-      projectInfoStatus: false,
       projectInfo: null,
       projectConfig: null,
       serverFiles: null,
@@ -116,13 +114,8 @@ export default {
     }
   },
   activated () {
-    this.$ws.bind('ProjectChanged', this.onProjectChange)
-    if (!this.projectInfo) {
-      this.fetchProjectInfo()
-    }
-  },
-  deactivated () {
-    this.$ws.unbind('ProjectChanged', this.onProjectChange)
+    const unbind = this.$ws.bind('ProjectChanged', this.onProjectChange)
+    this.$once('hook:deactivated', unbind)
   },
   beforeRouteLeave (to, from, next) {
     this.resetProjectData()
@@ -130,10 +123,9 @@ export default {
   },
   watch: {
     '$ws.pluginConnected': {
-      immediate: true,
       handler (connected) {
-        if (this.pageVisible && connected && !this.projectInfo) {
-          this.fetchProjectInfo()
+        if (!connected) {
+          this.resetProjectData()
         }
       }
     },
@@ -154,27 +146,9 @@ export default {
       Object.assign(this.$data, this.$options.data())
     },
     onProjectChange () {
+      // TODO: check routes and don't redirect always
       this.resetProjectData()
       this.$router.push({ name: 'publish' })
-      this.fetchProjectInfo()
-    },
-    fetchProjectInfo () {
-      if (!this.$ws.pluginConnected) {
-        return
-      }
-      this.projectInfoStatus = 0
-      this.$ws.request('ProjectInfo')
-        .then(resp => {
-          this.projectInfo = resp.data
-          this.projectInfoStatus = 200
-        })
-        .catch(err => {
-          this.projectInfo = null
-          this.projectInfoStatus = err.status
-          if (err.status !== 404) {
-            this.$notification.error(err.data || 'Error')
-          }
-        })
     },
     publish () {
       const meta = {

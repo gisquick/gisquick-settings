@@ -108,17 +108,15 @@ export default {
     }
   },
   activated () {
-    this.$ws.bind('ProjectChanged', this.fetchLocalFiles)
-    this.fetchLocalFiles()
+    const unbind = this.$ws.bind('ProjectChanged', this.fetchLocalFiles)
     const unwatch = this.$watch('pluginConnected', connected => {
       if (connected && !this.loadingLocalFiles) {
         this.fetchLocalFiles()
       }
     })
+    this.$once('hook:deactivated', unbind)
     this.$once('hook:deactivated', unwatch)
-  },
-  deactivated () {
-    this.$ws.unbind('ProjectChanged', this.fetchLocalFiles)
+    this.fetchLocalFiles()
   },
   watch: {
     projectPath: {

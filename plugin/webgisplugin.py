@@ -294,38 +294,6 @@ class WebGisPlugin(object):
         # legend_iface = self.iface.legendInterface().layers()
         return [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
 
-    def get_project_layers(self):
-        """Returns root layer node of project's overlay layers.
-
-        Returns:
-            webgisplugin.Node: project overlay layers tree (root node)
-        """
-
-        def overlays_tree(tree_node):
-            if isinstance(tree_node, QgsLayerTreeLayer):
-                layer = tree_node.layer()
-                if self.is_overlay_layer_for_publish(layer):
-                    return Node(layer.id(), layer=layer)
-            else:
-                children = []
-                for child_tree_node in tree_node.children():
-                    node = overlays_tree(child_tree_node)
-                    if node:
-                        children.append(node)
-                if children:
-                    return Node(tree_node.name(), children)
-
-        root_node = self.iface.layerTreeView().layerTreeModel().rootGroup()
-        tree = overlays_tree(root_node)
-
-        # def dump_node(node, depth=0):
-        #     print('  ' * depth, node.name)
-        #     if node.children:
-        #         for child in node.children:
-        #             dump_node(child, depth + 1)
-        #
-        # dump_node(tree)
-        return tree
 
     def get_layer_attributes(self, layer):
         fields = layer.fields()
@@ -370,7 +338,7 @@ class WebGisPlugin(object):
         #     ]
         return attributes_data
 
-    def get_project_layers(self):
+    def get_project_layers(self, skip_layers_with_error=False):
         dbname_pattern = re.compile("dbname='([^']+)'")
         project = QgsProject.instance()
         project_dir = project.absolutePath() + os.path.sep
@@ -466,8 +434,9 @@ class WebGisPlugin(object):
                         if info:
                             children.append(info)
                     except Exception as e:
-                        msg = "Failed to gather info from layer: '%s'" % child_tree_node.name()
-                        raise Exception(msg) from e
+                        if not skip_layers_with_error:
+                            msg = "Failed to gather info from layer: '%s'" % child_tree_node.name()
+                            raise WsError(msg, 405) from e
                 return {
                     "name": tree_node.name(),
                     "layers": children
@@ -507,7 +476,7 @@ class WebGisPlugin(object):
             composer_templates.append(composer_data)
         return composer_templates
 
-    def get_project_info(self):
+    def get_project_info(self, skip_layers_with_error=False):
         project = QgsProject.instance()
         project_crs = project.crs()
         map_canvas = self.iface.mapCanvas()
@@ -519,7 +488,7 @@ class WebGisPlugin(object):
             "file": project.absoluteFilePath(),
             "directory": project.absolutePath(),
             "title": project.title() or project.readEntry("WMSServiceTitle", "/")[0],
-            "layers": self.get_project_layers(),
+            "layers": self.get_project_layers(skip_layers_with_error),
             "composer_templates": self.get_print_templates(),
             "projection": {
                 "code": project_crs.authid(),
@@ -579,9 +548,12 @@ class WebGisPlugin(object):
 
         def callback(msg):
             msg_type = msg["type"]
+            data = msg.get("data")
             if msg_type == "ProjectInfo":
                 if QgsProject.instance().absolutePath():
-                    return self.get_project_info()
+                    if data:
+                        skip_layers_with_error = data.get("skip_layers_with_error", False)
+                    return self.get_project_info(skip_layers_with_error=skip_layers_with_error)
                 raise WsError("Project is not opened", 404)
 
             elif msg_type == "ProjectDirectory":
@@ -612,7 +584,7 @@ class WebGisPlugin(object):
                 finished = QtCore.pyqtSignal(int)
 
                 def run(self):
-                    print("Starting WS", "server:", server_url, "user:", username)
+                    # print("Starting WS", "server:", server_url, "user:", username)
                     res = gisquick_ws.start(server_url, username, password, client_info, callback)
                     self.finished.emit(res)
 
