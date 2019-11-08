@@ -27,12 +27,16 @@ type Client struct {
 	Server            string
 	User              string
 	Password          string
+	ClientInfo        string
 	httpClient        *http.Client
 	WsConn            *websocket.Conn
 	interrupt         chan int
 	OnMessageCallback func([]byte) string
-	ClientInfo        string
+	messageHandlers   map[string]messageHandler
+	cancelUpload      context.CancelFunc
 }
+
+type messageHandler func(msg message) error
 
 type message struct {
 	Type   string          `json:"type"`
@@ -54,6 +58,7 @@ func NewClient(url, user, password string) *Client {
 	c.Password = password
 	cookieJar, _ := cookiejar.New(nil)
 	c.httpClient = &http.Client{Jar: cookieJar}
+	c.registerHandlers()
 	return &c
 }
 
@@ -79,41 +84,30 @@ func (c *Client) readTextData(data string) (string, error) {
 	return value, nil
 }
 
-type messageHandler interface {
-	Accept(msgType string) bool
-	Process(msg message) error
+/* Message handlers */
+
+func (c *Client) registerHandlers() {
+	c.messageHandlers = make(map[string]messageHandler)
+	c.messageHandlers["PluginStatus"] = c.handlePluginStatus
+	c.messageHandlers["ProjectFiles"] = c.handleProjectFiles
+	c.messageHandlers["AbortUpload"] = c.handleAbortUpload
+	c.messageHandlers["UploadFiles"] = c.handleUploadFiles
 }
 
-type statusHandler struct {
-	client *Client
+func (c *Client) handlePluginStatus(msg message) error {
+	data := map[string]string{"client": c.ClientInfo}
+	return c.sendResponseMessage("PluginStatus", data)
 }
 
-func (h *statusHandler) Accept(msgType string) bool {
-	return msgType == "PluginStatus"
-}
-
-func (h *statusHandler) Process(msg message) error {
-	info := map[string]string{"status": "connected", "client": h.client.ClientInfo}
-	return h.client.sendResponseMessage("PluginStatus", info)
-}
-
-type filesHandler struct {
-	client *Client
-}
-
-func (h *filesHandler) Accept(msgType string) bool {
-	return msgType == "ProjectFiles"
-}
-
-func (h *filesHandler) Process(msg message) error {
+func (c *Client) handleProjectFiles(msg message) error {
 	type filesMsg struct {
 		Directory string    `json:"directory"`
 		Files     []fs.File `json:"files"`
 	}
 
 	// TODO: better error handling
-	r := h.client.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-	directory, _ := h.client.readTextData(r)
+	r := c.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
+	directory, _ := c.readTextData(r)
 	if directory == "" {
 		return errors.New("Project is not open")
 	}
@@ -125,27 +119,19 @@ func (h *filesHandler) Process(msg message) error {
 	for i, f := range *files {
 		(*files)[i].Path = filepath.ToSlash(f.Path)
 	}
-	resp := filesMsg{Directory: directory, Files: *files}
-	return h.client.sendResponseMessage(msg.Type, resp)
+	data := filesMsg{Directory: directory, Files: *files}
+	return c.sendResponseMessage(msg.Type, data)
 }
 
-type uploadHandler struct {
-	client *Client
-	cancel context.CancelFunc
-}
-
-func (h *uploadHandler) Accept(msgType string) bool {
-	return msgType == "UploadFiles" || msgType == "AbortUpload"
-}
-
-func (h *uploadHandler) Process(msg message) error {
-	if msg.Type == "AbortUpload" {
-		if h.cancel != nil {
-			h.cancel()
-			h.cancel = nil
-		}
-		return nil
+func (c *Client) handleAbortUpload(msg message) error {
+	if c.cancelUpload != nil {
+		c.cancelUpload()
+		c.cancelUpload = nil
 	}
+	return nil
+}
+
+func (c *Client) handleUploadFiles(msg message) error {
 	type Params struct {
 		Project string    `json:"project"`
 		Files   []fs.File `json:"files"`
@@ -168,8 +154,8 @@ func (h *uploadHandler) Process(msg message) error {
 			writer.WriteField("changes", string(msg.Data))
 
 			// TODO: better error handling
-			r := h.client.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
-			directory, _ := h.client.readTextData(r)
+			r := c.OnMessageCallback([]byte(`{"type":"ProjectDirectory"}`))
+			directory, _ := c.readTextData(r)
 
 			for _, f := range params.Files {
 				// ext := filepath.Ext(f.Path)
@@ -202,22 +188,22 @@ func (h *uploadHandler) Process(msg message) error {
 			errChan <- writer.Close()
 		}()
 
-		url := fmt.Sprintf("%s/api/project/upload/%s", h.client.Server, params.Project)
+		url := fmt.Sprintf("%s/api/project/upload/%s", c.Server, params.Project)
 		req, _ := http.NewRequest("POST", url, readBody)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		ctx, cancel := context.WithCancel(context.Background())
 		req = req.WithContext(ctx)
-		h.cancel = cancel
+		c.cancelUpload = cancel
 
-		resp, err := h.client.httpClient.Do(req)
+		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			fmt.Println(err)
-			h.client.WsConn.WriteJSON(message{Type: "UploadError"})
+			c.WsConn.WriteJSON(message{Type: "UploadError"})
 			return
 		}
 		defer resp.Body.Close()
-		h.cancel = nil
+		c.cancelUpload = nil
 
 		fmt.Println("Status", resp.StatusCode)
 
@@ -227,7 +213,7 @@ func (h *uploadHandler) Process(msg message) error {
 		}
 		if resp.StatusCode >= 400 {
 			fmt.Println("Send UploadError")
-			if err = h.client.sendErrorMessage("UploadError", string(respData)); err != nil {
+			if err = c.sendErrorMessage("UploadError", string(respData)); err != nil {
 				fmt.Printf("Failed to send error message: %s\n", err)
 			}
 		}
@@ -239,6 +225,8 @@ func (h *uploadHandler) Process(msg message) error {
 	}()
 	return nil
 }
+
+/* Normal methods */
 
 func (c *Client) login() error {
 	form := url.Values{"username": {c.User}, "password": {c.Password}}
@@ -298,15 +286,9 @@ func (c *Client) Start() error {
 
 	done := make(chan struct{})
 
-	var messageHandlers []messageHandler
-	messageHandlers = append(messageHandlers, &statusHandler{c})
-	messageHandlers = append(messageHandlers, &filesHandler{c})
-	messageHandlers = append(messageHandlers, &uploadHandler{client: c})
-
 	go func() {
 		defer close(done)
 
-	MESSAGE:
 		for {
 			_, rawMessage, err := wsConn.ReadMessage()
 			if err != nil {
@@ -320,14 +302,13 @@ func (c *Client) Start() error {
 			}
 			// log.Println("Msg type: ", msg.Type)
 			// log.Printf("Received: %s\n", message)
-			for _, h := range messageHandlers {
-				if h.Accept(msg.Type) {
-					if err := h.Process(msg); err != nil {
-						log.Println(err)
-						c.sendErrorMessage(msg.Type, err.Error())
-					}
-					continue MESSAGE
+			msgHandler, ok := c.messageHandlers[msg.Type]
+			if ok {
+				if err := msgHandler(msg); err != nil {
+					log.Println(err)
+					c.sendErrorMessage(msg.Type, err.Error())
 				}
+				continue
 			}
 			// possible issue if executed in different thread?
 			resp := c.OnMessageCallback(rawMessage)
