@@ -36,7 +36,7 @@
             height="6"
           />
         </v-layout>
-        <div v-else class="scroll-container mt-1">
+        <div v-else class="scroll-container grow mt-1">
           <v-treeview
             v-if="srcPath"
             :items="localFilesTree"
@@ -104,7 +104,7 @@
           height="6"
         />
       </v-layout>
-      <div v-else class="scroll-container mt-1">
+      <div v-else class="scroll-container grow mt-1">
         <v-treeview
           v-if="destLoading || (destFiles && destFiles.length > 0)"
           :items="serverFilesTree"

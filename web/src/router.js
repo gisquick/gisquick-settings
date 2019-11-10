@@ -47,7 +47,7 @@ export default new VueRouter({
     },
     {
       path: '/:user',
-      name: 'projects',
+      name: 'user-projects',
       component: ProjectsView,
       props: true
     },

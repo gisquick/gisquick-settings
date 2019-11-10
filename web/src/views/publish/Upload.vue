@@ -23,39 +23,38 @@
     </files-browser>
     <div class="toolbar mx-1 mt-2 mb-1">
       <div
-        v-if="browser"
+        v-if="filesBrowser"
         class="left"
       >
         <template v-if="!fetchingLocalFiles && !fetchingServerFiles">
-          <template v-if="browser.newFiles.length + browser.modifiedFiles.length > 0">
+          <template v-if="hasFilesToUpload">
             <small
-              v-show="browser.newFiles.length"
+              v-show="filesBrowser.newFiles.length"
               class="mx-2 green--text"
             >
-              New files: {{ browser.newFiles.length }}
+              New files: {{ filesBrowser.newFiles.length }}
             </small>
             <small
-              v-show="browser.modifiedFiles.length"
+              v-show="filesBrowser.modifiedFiles.length"
               class="mx-2 orange--text"
             >
-              Changed files: {{ browser.modifiedFiles.length }}
+              Changed files: {{ filesBrowser.modifiedFiles.length }}
             </small>
           </template>
           <small v-else>No changes detected</small>
         </template>
       </div>
       <v-btn
-        v-if="!uploadProgress"
+        v-if="!uploadProgress && !fetchingLocalFiles && !fetchingServerFiles"
         key="upload"
-        :disabled="fetchingLocalFiles || fetchingServerFiles"
-        @click="uploadFiles"
+        @click="hasFilesToUpload ? uploadFiles() : saveConfig()"
         rounded
       >
         <v-icon class="mr-2">cloud_upload</v-icon>
-        <span>{{ dest.length === 0 ? 'Upload' : 'Update' }}</span>
+        <span>{{ hasFilesToUpload ? 'Upload files' : 'Update config' }}</span>
       </v-btn>
       <v-btn
-        v-else
+        v-if="uploadProgress"
         key="cancel"
         @click="upload.abort()"
         rounded
@@ -77,7 +76,7 @@ import _omit from 'lodash/omit'
 import { dirname } from 'path'
 
 import FilesBrowser from '@/components/FilesBrowser'
-import { mapLayers, layersList } from '@/utils.js'
+import { layersList } from '@/utils.js'
 import { createUpload } from '@/upload.js'
 
 export default {
@@ -106,11 +105,18 @@ export default {
     projectServerDir () {
       return dirname(this.projectPath)
     },
-    browser () {
+    filesBrowser () {
       return this.$refs.filesBrowser
     },
     filesUploadProgress () {
       return this.uploadProgress && this.uploadProgress.files
+    },
+    hasFilesToUpload () {
+      if (this.filesBrowser) {
+        const { newFiles, modifiedFiles } = this.filesBrowser
+        return newFiles.length + modifiedFiles.length > 0
+      }
+      return false
     }
   },
   watch: {
@@ -165,7 +171,6 @@ export default {
     saveConfig () {
       this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
         .then(() => {
-          this.fetchServerFiles()
 
           const layers = JSON.parse(JSON.stringify(this.config.layers))
           layersList(layers).forEach(l => {
@@ -203,8 +208,8 @@ export default {
           console.error(e)
           this.$notification.error(e)
         }
-        this.fetchServerFiles()
       } finally {
+        this.fetchServerFiles()
         this.uploadProgress = null
       }
     }
@@ -218,6 +223,7 @@ export default {
   overflow: hidden;
 }
 .toolbar {
+  min-height: 36px;
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr auto 1fr;

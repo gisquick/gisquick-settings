@@ -124,7 +124,7 @@ export default {
   watch: {
     '$ws.pluginConnected': {
       handler (connected) {
-        if (!connected) {
+        if (!connected && this.$route.meta.requiresPlugin) {
           this.resetProjectData()
         }
       }
