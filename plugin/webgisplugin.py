@@ -331,11 +331,6 @@ class WebGisPlugin(object):
                 attribute_data['alias'] = alias
             attributes_data.append(attribute_data)
 
-        # if attributes_data:
-        #     layer_data['attributes'] = attributes_data
-        #     layer_data['pk_attributes'] = [
-        #         fields.at(index).name() for index in layer.dataProvider().pkAttributeIndexes()
-        #     ]
         return attributes_data
 
     def get_project_layers(self, skip_layers_with_error=False):
@@ -410,6 +405,11 @@ class WebGisPlugin(object):
                     info["geom_type"] = ('POINT', 'LINE', 'POLYGON', None, None)[layer.geometryType()]
                     info["labels"] = layer.labelsEnabled()
                     info["attributes"] = self.get_layer_attributes(layer)
+                    if info["attributes"]:
+                        fields = layer.fields()
+                        info['pk_attributes'] = [
+                            fields.at(index).name() for index in layer.dataProvider().pkAttributeIndexes()
+                        ]
 
                 if provider_type == "wms":
                     info["format"] = source_params["format"][0]
