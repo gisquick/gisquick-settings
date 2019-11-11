@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"fs"
 	"html/template"
@@ -25,6 +26,30 @@ import (
 
 	"github.com/go-chi/chi"
 )
+
+func extractQgzFile(srcPath, destPath string) error {
+	zipReader, err := zip.OpenReader(srcPath)
+	if err != nil {
+		return err
+	}
+	defer zipReader.Close()
+	var projectFile *zip.File
+	for _, f := range zipReader.File {
+		if strings.HasSuffix(f.Name, ".qgs") {
+			projectFile = f
+			break
+		}
+	}
+	if projectFile == nil {
+		return errors.New("Invalid .qgz archive")
+	}
+	freader, err := projectFile.Open()
+	if err != nil {
+		return err
+	}
+	defer freader.Close()
+	return fs.SaveToFile(freader, destPath)
+}
 
 func (s *Server) handlePluginWs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +249,17 @@ func (s *Server) handleUpload() http.HandlerFunc {
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
+			}
+		}
+		// extract qgz project files
+		for _, f := range info.Files {
+			if strings.HasSuffix(f.Path, ".qgz") {
+				qgzFile := filepath.Join(projectDir, f.Path)
+				qgsFile := strings.TrimSuffix(qgzFile, "qgz") + "qgs"
+				if err = extractQgzFile(qgzFile, qgsFile); err != nil {
+					log.Printf("Failed to extract qgis project file: %s (%s)\n", qgzFile, err)
+					continue
+				}
 			}
 		}
 		w.Write([]byte(""))
