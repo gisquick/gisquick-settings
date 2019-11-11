@@ -1,15 +1,18 @@
 import os
-import sys
 import json
 import ctypes
 import _ctypes
+import platform
 from traceback import TracebackException
 
 
-if sys.platform.startswith("linux"):
+system = platform.system()
+if system == "Linux":
     lib_ext = "so"
-elif sys.platform.startswith("win"):
+elif system == "Windows":
     lib_ext = "dll"
+elif system == "Darwin":
+    lib_ext = "dylib"
 else:
     raise RuntimeError("Not supported OS!")
 
@@ -93,7 +96,8 @@ class GisquickWs():
             self._unload_lib()
 
     def stop(self):
-        self._lib.Stop()
+        if self._lib:
+            self._lib.Stop()
 
     def send(self, name, data=None):
         msg = {
