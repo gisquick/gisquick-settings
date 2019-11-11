@@ -16,6 +16,13 @@
         </v-btn>
       </template>
       <template v-slot:dest-toolbar>
+        <v-btn
+          icon
+          :disabled="dest.length === 0"
+          @click="clearServerFiles"
+        >
+          <v-icon>delete_forever</v-icon>
+        </v-btn>
         <v-btn icon @click="fetchServerFiles">
           <v-icon>refresh</v-icon>
         </v-btn>
@@ -212,6 +219,15 @@ export default {
         this.fetchServerFiles()
         this.uploadProgress = null
       }
+    },
+    clearServerFiles () {
+      this.$http.delete(`/api/project/delete/${this.projectServerDir}`)
+        .then(resp => {
+          this.dest = []
+        })
+        .catch(() => {
+          this.$notification.error('Failed to delete files')
+        })
     }
   }
 }
