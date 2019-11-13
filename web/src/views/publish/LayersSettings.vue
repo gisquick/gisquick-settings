@@ -7,7 +7,7 @@
       :opened.sync="opened"
       :selected="selected"
       selected-class="amber lighten-4"
-      class="mx-1 my-1 elevation-2"
+      class="ml-1 mr-2 my-1 elevation-2"
       @click:row="onClick"
     >
       <template v-slot:leaf.publish="{ item }">
@@ -28,7 +28,7 @@
       :opened.sync="opened"
       :selected="selected"
       selected-class="amber lighten-4"
-      class="mx-1 my-1 elevation-2"
+      class="ml-2 mr-1 my-1 elevation-2"
       @click:row="onClick"
     >
       <template v-slot:leaf.publish="{ item }">
@@ -58,8 +58,9 @@
 
     <v-btn
       rounded
-      class="swap"
-      :disabled="selected === null"
+      class="swap grey lighten-2"
+      :disabled="!canSwapSelectedLayer"
+      :outlined="!canSwapSelectedLayer"
       @click="swapSelectedLayer"
     >
       <v-icon>swap_horiz</v-icon>
@@ -68,8 +69,9 @@
 </template>
 
 <script>
-import _keyBy from 'lodash/keyBy'
 import LayersTable from '@/components/LayersTable'
+
+const specialBaseLayersTypes = ['blank', 'osm', 'mapbox', 'bing']
 
 export default {
   name: 'LayersSettings',
@@ -85,10 +87,6 @@ export default {
     }
   },
   computed: {
-    overlays () {
-      const baseNames = this.config.base_layers.map(l => l.name)
-      return this.layers.filter(l => !baseNames.includes(l.name))
-    },
     baseLayersHeaders () {
       return [
         {
@@ -110,6 +108,16 @@ export default {
         //   value: 'attributes'
         }
       ]
+    },
+    selectedLayer () {
+      if (!this.selected) {
+        return null
+      }
+      const { base_layers, overlays } = this.config
+      return base_layers.find(l => l.name === this.selected) || overlays.find(l => l.name === this.selected)
+    },
+    canSwapSelectedLayer () {
+      return this.selectedLayer && !specialBaseLayersTypes.includes(this.selectedLayer.type)
     }
   },
   methods: {
@@ -145,8 +153,5 @@ export default {
   min-width: 36px;
   padding: 0;
   transform: translate(-50%, -50%);
-  &.v-btn--disabled {
-    opacity: 0;
-  }
 }
 </style>
