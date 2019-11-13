@@ -522,7 +522,7 @@ class WebGisPlugin(object):
         dialog.show()
         res = dialog.exec_()
         if res == 1:
-            settings.setValue("server_url", dialog.server_url.text())
+            settings.setValue("server_url", dialog.server_url.text().rstrip("/"))
             settings.setValue("username", dialog.username.text())
             settings.setValue("password", dialog.password.text())
 
