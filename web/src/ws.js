@@ -73,7 +73,7 @@ export default function WebsocketMessenger (url) {
     listeners.filter(l => l.type === msg.type).forEach(l => l.callback(msg))
   }
   timer = setInterval(() => {
-    socket.send('Ping')
+    ws.send('PluginStatus')
   }, 30 * 1000)
   return ws
 }
