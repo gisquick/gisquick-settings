@@ -9,6 +9,7 @@
     <div v-if="error" class="error-msg red--text">
       <small>Failed to render map</small>
     </div>
+    <slot/>
   </div>
 </template>
 

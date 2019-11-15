@@ -49,7 +49,7 @@
             </v-btn>
           </template>
           <v-list dense>
-            <v-list-item @click="enableDrawTool">
+            <v-list-item @click="drawToolActive = true">
               <v-list-item-content>Draw on map</v-list-item-content>
               <v-list-item-icon>
                 <v-icon>picture_in_picture</v-icon>
@@ -98,7 +98,9 @@
             :config="config"
             class="box grow"
             ref="mapPreview"
-          />
+          >
+            <draw-extent v-if="drawToolActive" @draw="onExtentDraw"/>
+          </map-preview>
         </v-layout>
       </v-layout>
       <v-checkbox
@@ -114,11 +116,11 @@
 
 <script>
 import { extend } from 'ol/extent'
-import Draw, { createBox } from 'ol/interaction/Draw'
-
 import { required } from '@/validators'
 import { layersList, scalesToResolutions } from '@/utils'
 import ScalesList from '@/components/ScalesList'
+const MapPreview = () => import(/* webpackChunkName: "olmap" */ '@/components/MapPreview');
+const DrawExtent = () => import(/* webpackChunkName: "olmap" */ '@/components/DrawExtent');
 
 function roundExtent (extent) {
   const maxVal = Math.max(...extent.map(v => Math.abs(v)))
@@ -130,14 +132,16 @@ function roundExtent (extent) {
 
 export default {
   name: 'ProjectSettings',
-  components: {
-    ScalesList,
-    'map-preview': () => import('@/components/MapPreview')
-  },
+  components: { ScalesList, MapPreview, DrawExtent },
   props: {
     layers: Array,
     config: Object,
     projectPath: String
+  },
+  data () {
+    return {
+      drawToolActive: false
+    }
   },
   computed: {
     authOpts () {
@@ -190,17 +194,9 @@ export default {
       this.config.scales = scales
       this.config.tile_resolutions = scalesToResolutions(scales, this.config.units)
     },
-    enableDrawTool () {
-      const olMap = this.$refs.mapPreview.map
-      const draw = new Draw({
-        type: 'Circle',
-        geometryFunction: createBox()
-      })
-      olMap.addInteraction(draw)
-      draw.once('drawend', evt => {
-        this.setExtent(evt.feature.getGeometry().getExtent())
-        olMap.removeInteraction(draw)
-      })
+    onExtentDraw (extent) {
+      this.setExtent(extent)
+      this.drawToolActive = false
     }
   }
 }
