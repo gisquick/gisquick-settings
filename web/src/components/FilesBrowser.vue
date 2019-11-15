@@ -40,6 +40,7 @@
           <v-treeview
             v-if="srcPath"
             :items="localFilesTree"
+            item-key="path"
             class="mt-2 px-2"
             dense
           >
@@ -108,6 +109,7 @@
         <v-treeview
           v-if="destLoading || (destFiles && destFiles.length > 0)"
           :items="serverFilesTree"
+          item-key="path"
           class="mt-2 px-2"
           dense
         >

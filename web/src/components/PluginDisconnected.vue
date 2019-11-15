@@ -1,12 +1,9 @@
-<template functional>
-  <v-layout
-    column align-center justify-center
-    :class="[data.class, data.staticClass]"
-  >
+<template>
+  <v-layout column align-center justify-center>
     <h4 class="my-4">QGIS plugin is not connected!</h4>
     <img src="@/assets/qgis_disconnected.svg" class="my-2">
     <!-- <small class="my-4">* A special version of plugin is required, which is not available yet.</small> -->
-    <small class="mt-5 mb-2">You can download required plugin here (64-bit architecture):</small>
+    <small class="mt-5 mb-2">You can download required plugin here (64-bit OS):</small>
     <v-layout shrink>
       <v-btn href="/media/files/gisquick2_lin64.zip" text>
         <icon name="linux"/>
@@ -23,7 +20,7 @@
 
 <script>
 export default {
-  functional: true
+
 }
 </script>
 
