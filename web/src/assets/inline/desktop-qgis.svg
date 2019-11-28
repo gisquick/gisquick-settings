@@ -23,7 +23,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -96,44 +96,31 @@
      inkscape:window-height="790"
      id="namedview8"
      showgrid="false"
-     inkscape:zoom="13.906434"
-     inkscape:cx="19.748226"
-     inkscape:cy="23.709877"
+     inkscape:zoom="6.9532172"
+     inkscape:cx="4.614498"
+     inkscape:cy="35.647412"
      inkscape:window-x="326"
      inkscape:window-y="115"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg6" />
   <rect
-     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.74137998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:2.86783862;stroke-opacity:0.58823529"
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#3e3e3e;stroke-width:0.761;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:2.86783862;stroke-opacity:0.58823529"
      id="rect817"
-     width="25.258619"
-     height="16.258619"
-     x="3.3706901"
-     y="6.3706894" />
+     width="26.335922"
+     height="16.938921"
+     x="2.3805389"
+     y="5.3025393" />
   <path
      d="M 1.050242,1.4514238 H 32.946034 V 33.347215 H 1.050242 Z"
      id="path2"
      inkscape:connector-curvature="0"
      style="fill:none;stroke-width:1.32899129" />
   <path
-     d="M 29,4 H 3.7272729 C 2.2272729,4 1,4.5381092 1,6 v 16.999088 c 0,1.220365 0.9912321,1.992823 2.0081813,1.992823 H 13 V 28.03125 H 10 V 31 h 12 v -2.96875 h -3 v -3.039339 h 9.272728 C 29.772727,24.991911 31,23.795819 31,22.333928 V 6 C 31,4.8686177 30.194914,4 29,4 Z m 0,19 H 3 V 6 h 26 z"
-     id="path4"
-     inkscape:connector-curvature="0"
-     style="fill:#f0f0f0;fill-opacity:0.58823532;stroke-width:1.34620237"
-     sodipodi:nodetypes="sssssccccccccssssccccc" />
-  <path
      style="fill:#dcdcdc;fill-opacity:0.47058824;stroke:none;stroke-width:2.5999999;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      d="m 34.65,4.9999992 c -0.360101,0 -0.65,0.2898999 -0.65,0.65 V 30.349999 C 34,30.710099 34.289899,31 34.65,31 H 46.349999 C 46.710099,31 47,30.710099 47,30.349999 V 5.6499992 c 0,-0.3601001 -0.289901,-0.65 -0.650001,-0.65 z M 36.561913,8 h 7.876172 c 0.681279,0 1.261914,0.7806367 1.261914,1.4619154 v 0.076164 C 45.699999,10.219364 45.119364,11 44.438085,11 H 36.561913 C 35.880634,11 35.299999,10.219364 35.299999,9.5380846 V 9.4619206 C 35.299999,8.780637 35.880634,8 36.561913,8 Z m 4.047266,12.203905 c 1.133323,2e-6 2.06172,0.925859 2.06172,2.05918 0,1.133322 -0.928397,2.061719 -2.06172,2.061719 -1.133323,0 -2.059179,-0.928397 -2.059179,-2.061719 0,-1.133321 0.925856,-2.05918 2.059179,-2.05918 z m 0,0.756642 c -0.724673,0 -1.302539,0.577867 -1.302539,1.302538 0,0.724672 0.577866,1.305078 1.302539,1.305078 0.724672,0 1.305079,-0.580406 1.305079,-1.305078 0,-0.724671 -0.580407,-1.302538 -1.305079,-1.302538 z"
      id="rect4526"
      inkscape:connector-curvature="0"
      sodipodi:nodetypes="sssssssssssssssssscssscsssss" />
-  <rect
-     y="-33.523216"
-     x="3.4767835"
-     height="16.046432"
-     width="25.046434"
-     id="rect4524"
-     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#8f8f8f;stroke-width:0.95356667;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:2.86783862;stroke-opacity:0.58823529" />
   <g
      id="g4557"
      transform="matrix(0.42882091,0,0,0.42882091,8.486305,39.629186)">
@@ -166,4 +153,10 @@
          id="polygon20" />
     </g>
   </g>
+  <path
+     d="M 29.044664,4 H 2.0609416 C 1.3880272,4 1.0005265,4.075537 1.0005265,4.9344156 V 22.646004 c 0,1.274217 -0.05303,2.080782 0.9053363,2.080782 H 12.338596 v 4.447217 H 9.206222 V 31 H 21.73576 v -1.825997 h -3.132396 v -4.447217 h 9.775017 c 1.380019,0 1.563052,-0.506878 1.563052,-2.099784 V 4.8968024 C 29.941433,4.364254 29.634101,4 29.044664,4 Z m 0,18.646959 H 1.9692266 V 4.8968024 H 29.044664 Z"
+     id="path4-36"
+     inkscape:connector-curvature="0"
+     style="fill:#f0f0f0;fill-opacity:0.58823529;stroke-width:1.40560853"
+     sodipodi:nodetypes="sssssccccccccssssccccc" />
 </svg>
