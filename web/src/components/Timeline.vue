@@ -35,47 +35,17 @@
           :stroke-dasharray="`${!visited[files.link.name] ? 0 : 120}, 500`"
         />
       </svg>
-      <svg
+
+      <timeline-menu-lines
         v-if="activeItem === checkin"
+        :x="81"
+        :ymax="75"
+        :number="2"
+        :step="30"
+        :duration="500"
+        style="position: absolute; padding-top: 24px; padding-bottom:47px;"
         class="line secondary-link"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        width="100%"
-        height="100%"
-        style="padding:24px 0; position: absolute;"
-      >
-        <path id="l1" d="M 100 35 H 100"/>
-        <path id="l2" d="M 100 60 h 0 v 0"/>
-        <path id="l3" d="M 85 35 v 0 l 0 0"/>
-        <animate
-          id="anim1"
-          xlink:href="#l1"
-          dur="0.3s"
-          attributeName="d"
-          fill="freeze"
-          values="M 100 35 H 100;
-                  M 100 35 H 85;"
-        />
-        <animate
-          xlink:href="#l2"
-          dur="0.3s"
-          attributeName="d"
-          fill="freeze"
-          values="M 100 60 h 0 v 0;
-                  M 100 60 h -15 v 0;
-                  M 100 60 h -15 v -25;"
-        />
-        <animate
-          xlink:href="#l3"
-          dur="0.3s"
-          attributeName="d"
-          fill="freeze"
-          begin="anim1.end"
-          values="M 85 35 v 0 l 0 0;
-                  M 85 35 V 15 l 0 0;
-                  M 85 35 V 15 L 60 0;"
-        />
-      </svg>
+      />
     </div>
 
     <!-- Connection: Files -> Settings -->
@@ -133,48 +103,13 @@
           stroke-width="2"
         />
       </svg>
-      <svg
+      <timeline-menu-lines
         v-if="activeItem === settings"
-        height="100%"
-        width="100%"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+        :number="3"
+        :duration="700"
         style="position: absolute; padding-top: 24px"
         class="line secondary-link"
-      >
-        <path>
-          <animate
-            begin="0.25s"
-            dur="0.3s"
-            attributeName="d"
-            fill="freeze"
-            values="M 100 35 H 100;
-                    M 100 35 H 80;"
-          />
-        </path>
-        <path>
-          <animate
-            begin="0.15s"
-            dur="0.3s"
-            attributeName="d"
-            fill="freeze"
-            values="M 100 60 H 100;
-                    M 100 60 H 80;"
-          />
-        </path>
-        <path>
-          <animate
-            dur="0.75s"
-            attributeName="d"
-            fill="freeze"
-            values="M 100 85 h 0 v 0 v 0 l 0 0;
-                    M 100 85 H 80 v 0 v 0 l 0 0;
-                    M 100 85 H 80 V 35 v 0 l 0 0;
-                    M 100 85 H 80 V 35 V 22 l 0 0;
-                    M 100 85 H 80 V 35 V 22 L 65 8;"
-          />
-        </path>
-      </svg>
+      />
     </div>
 
     <settings-svg
@@ -225,7 +160,6 @@
       <v-expand-transition
         v-if="item.sublinks"
         :key="`sublink-${index}`"
-        :duration="1000"
       >
         <v-layout
           v-if="activeItem === item"
@@ -268,10 +202,11 @@ import SettingsSvg from '@/assets/inline/timeline-settings.svg'
 import PublishSvg from '@/assets/inline/timeline-publish.svg'
 import DesktopSvg from '@/assets/inline/desktop-qgis.svg'
 import BrowsersSvg from '@/assets/inline/timeline-browsers.svg'
+import TimelineMenuLines from '@/components/TimelineMenuLines'
 
 export default {
   name: 'timeline',
-  components: { CheckinSvg, FilesSvg, SettingsSvg, PublishSvg, DesktopSvg, BrowsersSvg },
+  components: { CheckinSvg, FilesSvg, SettingsSvg, PublishSvg, DesktopSvg, BrowsersSvg, TimelineMenuLines },
   props: {
     checkin: {
       type: Object,
