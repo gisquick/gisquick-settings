@@ -40,6 +40,13 @@
       >
         <v-icon size="20" class="mr-1" v-text="sourceInfo[item.name].icon"/>
         <span>{{ sourceInfo[item.name].text }}</span>
+        <v-spacer/>
+        <v-tooltip v-if="sourceInfo[item.name].error" bottom color="red darken-1">
+          <template v-slot:activator="{ on }">
+            <v-icon v-on="on" color="red darken-1">report</v-icon>
+          </template>
+          <span v-text="sourceInfo[item.name].error"/>
+        </v-tooltip>
       </v-layout>
     </template>
   </layers-table>
@@ -110,24 +117,30 @@ export default {
     sourceInfo () {
       const sources = {}
       const projectDir = this.config.directory + path.sep
+      const clientWinPlatform = /windows/i.test(this.$ws.clientInfo)
       layersList(this.layers).forEach(l => {
         let text = l.source
         const schema = l.source.split('://')[0]
+        const info = { icon: this.sourceIcons[schema] }
         if (schema === 'file') {
           text = text.substring(7)
+          if (clientWinPlatform) {
+            text = text.replace(/^[/]+/, '') // strip '/' from the beginning
+          }
           if (text.startsWith(projectDir)) {
             text = text.substring(projectDir.length)
+          } else {
+            info.error = 'Data file is located outside of project directory'
           }
         }
-        sources[l.name] = {
-          icon: this.sourceIcons[schema],
-          text
-        }
+        info.text = text
+        sources[l.name] = info
       })
       return sources
     },
     status () {
-      return 'ok'
+      const error = Object.values(this.sourceInfo).some(s => s.error)
+      return error ? 'error' : 'ok'
     }
   },
   watch: {

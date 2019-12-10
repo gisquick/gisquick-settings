@@ -1,5 +1,12 @@
 <template>
   <v-layout column>
+    <h4>Project info</h4>
+    <v-text-field
+      label="Project file"
+      :value="config.file"
+      class="shrink mx-4"
+      disabled
+    />
     <h4>Map settings</h4>
     <v-text-field
       label="Projection"

@@ -176,7 +176,12 @@
           >
             <v-icon small class="mr-1">keyboard_arrow_right</v-icon>
             <span class="grow">{{ link.label }}</span>
-            <v-icon v-if="link.status === 'error'" class="red--text" small>error</v-icon>
+            <v-icon
+              v-if="link.status === 'error'"
+              v-text="'report'"
+              class="red--text text--darken-1"
+              size="18"
+            />
           </v-btn>
         </v-layout>
       </v-expand-transition>
