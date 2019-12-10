@@ -42,7 +42,6 @@
             :items="localFilesTree"
             item-key="path"
             class="mt-2 px-2"
-            dense
           >
             <template v-slot:label="{ item, open }">
               <v-layout :style="item.children ? dirsStyles[item.path] : filesStyles[item.path]">
@@ -335,8 +334,13 @@ export default {
       padding-right: 2px;
       margin-right: 4px;
     }
-    ::v-deep .v-treeview-node__label {
-      margin-left: 0;
+    ::v-deep {
+     .v-treeview-node__label {
+        margin-left: 0;
+      }
+      .v-treeview-node__root {
+        min-height: 38px;
+      }
     }
   }
 }

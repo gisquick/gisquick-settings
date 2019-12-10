@@ -38,7 +38,7 @@
           type="number"
           class="mr-2"
         />
-        <v-menu bottom max-height="400">
+        <v-menu bottom max-height="400" min-width="220">
           <template v-slot:activator="{ on }">
             <v-btn
               v-on="on"

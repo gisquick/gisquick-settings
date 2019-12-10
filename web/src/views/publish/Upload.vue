@@ -1,5 +1,5 @@
 <template>
-  <v-layout column>
+  <v-layout column mb-0 pb-2>
     <files-browser
       ref="filesBrowser"
       :src-files="src.files"
