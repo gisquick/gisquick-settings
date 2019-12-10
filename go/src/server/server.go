@@ -110,9 +110,7 @@ func (s *Server) apiRoutes() {
 }
 
 func (s *Server) prodRoutes() {
-	// s.router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("web"))))
-	s.router.Handle("/static/*", http.FileServer(http.Dir("web")))
-	s.router.Handle("/img/*", http.FileServer(http.Dir("web")))
+	s.router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	s.router.Get("/*", s.authMiddleware(s.handleIndex()))
 }
 

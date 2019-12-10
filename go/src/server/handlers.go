@@ -574,7 +574,7 @@ func (s *Server) handleGetMap() http.HandlerFunc {
 }
 
 func (s *Server) handleIndex() http.HandlerFunc {
-	tmpl := template.Must(template.ParseFiles("web/index.html"))
+	tmpl := template.Must(template.ParseFiles("index.html"))
 
 	type AppData struct {
 		User *User `json:"user"`

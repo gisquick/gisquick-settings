@@ -54,7 +54,7 @@ module.exports = {
       .use('file-loader')
       .loader('file-loader')
       .options({
-        name: 'img/[name].[hash:8].[ext]'
+        name: 'static/img/[name].[hash:8].[ext]'
       })
       .end()
       .end()
