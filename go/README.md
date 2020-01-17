@@ -1,3 +1,5 @@
+## Development
+
 ### Setup
 ```
 export GOPATH=`pwd`/libs:`pwd`
@@ -14,7 +16,7 @@ export SERVER_URL=http://localhost:8000
 go run cmd/server/main.go -dev
 ```
 
-### Build plugin
+### Build plugin's shared library
 ```
 export GOPATH=`pwd`/libs:`pwd`
 go build -buildmode=c-shared -o gisquick.so cmd/plugin/main.go

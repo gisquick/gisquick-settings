@@ -108,7 +108,7 @@ export default {
   methods: {
     fetchProjects () {
       this.loading = true
-      const url = this.user ? `/${this.user}/projects.json` : '/projects.json'
+      const url = this.user ? `/api/projects/${this.user}/` : '/api/projects/'
       this.$http.get(url)
         .then(resp => {
           this.$root.projects = resp.data.projects

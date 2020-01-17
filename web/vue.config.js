@@ -2,14 +2,6 @@ module.exports = {
   // transpileDependencies: ['vuetify'],
   publicPath: process.env.NODE_ENV === 'production' ? '/user/' : '/',
   assetsDir: 'static',
-  pages: process.env.NODE_ENV === 'development'
-    ? {
-      index: {
-        entry: 'src/main.js',
-        template: 'index-dev.html'
-      }
-    }
-    : undefined,
   chainWebpack: config => {
     const svgRule = config.module.rule('svg')
     svgRule.uses.clear()
@@ -67,19 +59,11 @@ module.exports = {
         secure: false,
         ws: true
       },
-      '^/login|^/logout|^/project.json|/projects.json': {
-        target: 'http://localhost:8000',
-        changeOrigin: true
-      },
-      // '^/api/login|^/api/logout': {
-      //   target: 'http://localhost:8000',
-      //   pathRewrite: (path, req) => path.replace('/api', '')
-      // },
-      '^/api': {
+      '^/api/project/': {
         target: 'http://localhost:8001'
       },
-      '^/dev': {
-        target: 'http://localhost:8001',
+      '^/api': {
+        target: 'http://localhost:8000',
         changeOrigin: true
       }
     }

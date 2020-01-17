@@ -109,15 +109,9 @@ func (s *Server) apiRoutes() {
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
 }
 
-func (s *Server) prodRoutes() {
-	s.router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	s.router.Get("/*", s.authMiddleware(s.handleIndex()))
-}
-
 func (s *Server) devRoutes() {
-	s.router.Get("/dev/", s.authMiddleware(s.handleDev()))
-	s.router.Post("/login/", s.handleProxyRequest())
-	s.router.HandleFunc("/logout/", s.handleProxyRequest())
+	s.router.Post("/api/auth/login/", s.handleProxyRequest())
+	s.router.HandleFunc("/api/auth/logout/", s.handleProxyRequest())
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -137,8 +131,6 @@ func NewServer(config Config, dev bool) *Server {
 	s.apiRoutes()
 	if dev {
 		s.devRoutes()
-	} else {
-		s.prodRoutes()
 	}
 	return &s
 }

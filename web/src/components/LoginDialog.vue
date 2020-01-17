@@ -51,7 +51,7 @@
 <script>
 
 export default {
-  name: 'login-dialog',
+  name: 'LoginDialog',
   data () {
     return {
       open: true,
@@ -67,7 +67,7 @@ export default {
       const form = new FormData()
       form.append('username', this.username)
       form.append('password', this.password)
-      this.$http.post('/login/', form)
+      this.$http.post('/api/auth/login/', form)
         .then((resp) => {
           this.authenticationError = null
           this.$emit('login', resp.data)

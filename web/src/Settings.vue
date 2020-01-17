@@ -62,7 +62,7 @@ export default {
   },
   methods: {
     logout () {
-      this.$http.get('/logout/').then(() => location.reload())
+      this.$http.get('/api/auth/logout/').then(() => location.reload())
     }
   }
 }

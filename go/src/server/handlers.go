@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"fs"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -570,39 +569,6 @@ func (s *Server) handleGetMap() http.HandlerFunc {
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		// w.Header().Set("Content-Length", resp.Header.Get("Content-Length"))
 		io.Copy(w, resp.Body)
-	}
-}
-
-func (s *Server) handleIndex() http.HandlerFunc {
-	tmpl := template.Must(template.ParseFiles("index.html"))
-
-	type AppData struct {
-		User *User `json:"user"`
-	}
-	type TemplateData struct {
-		AppData AppData
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		data := AppData{}
-		user, ok := r.Context().Value(contextKeyUser).(*User)
-		if ok && !user.IsGuest {
-			data.User = user
-		}
-		tmpl.Execute(w, TemplateData{data})
-	}
-}
-
-func (s *Server) handleDev() http.HandlerFunc {
-	type Data struct {
-		User *User `json:"user"`
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		data := Data{}
-		user, ok := r.Context().Value(contextKeyUser).(*User)
-		if ok && !user.IsGuest {
-			data.User = user
-		}
-		s.jsonResponse(w, data)
 	}
 }
 

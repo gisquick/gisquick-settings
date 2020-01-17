@@ -5,6 +5,7 @@ import { ReactiveRefs } from 'vue-reactive-refs'
 
 import http from './http.js'
 import App from './App.vue'
+import ServerError from './ServerError'
 import Icon from './components/Icon.vue'
 import Expander from './components/Expander.vue'
 import vuetify from './plugins/vuetify'
@@ -21,28 +22,31 @@ Vue.component('expander', Expander)
 Vue.filter('filesize', filters.formatFileSize)
 Vue.prototype.$http = http
 
-if (process.env.NODE_ENV === 'development') {
-  var initialize = new Promise((resolve, reject) => {
-    http.get('/dev/')
-      .then(resp => resolve(resp.data))
-      .catch(reject)
-  })
-} else {
-  initialize = new Promise(resolve => {
-    resolve(JSON.parse(document.getElementById('app-data').textContent))
-  })
-}
-
-initialize.then(data => {
+function createApp (data) {
   new Vue({
     router,
     vuetify,
     data () {
       return {
-        user: data.user,
+        ...data,
         projects: []
       }
     },
     render: h => h(App)
   }).$mount('#app')
-})
+}
+
+http.get('/api/app/')
+  .then(resp => {
+    const data = resp.data
+    if (data.user && data.user.is_guest) {
+      data.user = null
+    }
+    createApp(data)
+  })
+  .catch(() => {
+    new Vue({
+      vuetify,
+      render: h => h(ServerError)
+    }).$mount('#app')
+  })

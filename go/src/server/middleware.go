@@ -12,7 +12,7 @@ func (s *Server) authMiddleware(v http.HandlerFunc) http.HandlerFunc {
 		User User `json:"user"`
 	}
 	client := &http.Client{}
-	authURL := fmt.Sprintf("%s/user.json", s.config.AppServer)
+	authURL := fmt.Sprintf("%s/api/auth/user/", s.config.AppServer)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
