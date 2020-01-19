@@ -256,7 +256,7 @@ func (c *Client) handleUploadFiles(msg message) error {
 
 func (c *Client) login() error {
 	form := url.Values{"username": {c.User}, "password": {c.Password}}
-	url := fmt.Sprintf("%s/login/", c.Server)
+	url := fmt.Sprintf("%s/api/auth/login/", c.Server)
 	resp, err := c.httpClient.PostForm(url, form)
 	if err != nil {
 		return err
@@ -269,7 +269,7 @@ func (c *Client) login() error {
 }
 
 func (c *Client) logout() error {
-	url := fmt.Sprintf("%s/logout/", c.Server)
+	url := fmt.Sprintf("%s/api/auth/logout/", c.Server)
 	_, err := c.httpClient.Get(url)
 	if err != nil {
 		return err
