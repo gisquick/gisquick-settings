@@ -12,11 +12,12 @@ import (
 
 // Config export
 type Config struct {
-	ProjectsDirectory string
-	AppServer         string
-	MapServer         string
-	MaxFileUpload     int64
-	MaxProjectSize    int64
+	ProjectsRoot   string
+	MapCacheRoot   string
+	AppServer      string
+	MapServer      string
+	MaxFileUpload  int64
+	MaxProjectSize int64
 }
 
 // User export
@@ -106,6 +107,7 @@ func (s *Server) apiRoutes() {
 	s.router.Post("/api/project/config/{user}/{directory}/{name}", s.loginRequired(s.handleSaveConfig()))
 	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
+	s.router.Delete("/api/project/cache/{user}/{directory}/{name}", s.loginRequired(s.handleCacheDelete()))
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
 }
 

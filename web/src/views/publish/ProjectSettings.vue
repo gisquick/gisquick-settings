@@ -103,12 +103,22 @@
           </map-preview>
         </v-layout>
       </v-layout>
-      <v-checkbox
-        label="Map cache"
-        color="primary"
-        class="mt-2"
-        v-model="config.use_mapcache"
-      />
+      <v-layout justify-space-between>
+        <v-checkbox
+          label="Map cache"
+          color="primary"
+          class="mt-2"
+          v-model="config.use_mapcache"
+        />
+        <v-btn
+          text
+          outlined
+          color="red darken-2"
+          @click="deleteCache"
+        >
+          Delete cache
+        </v-btn>
+      </v-layout>
     </v-form>
     <v-spacer/>
   </v-layout>
@@ -197,6 +207,9 @@ export default {
     onExtentDraw (extent) {
       this.setExtent(extent)
       this.drawToolActive = false
+    },
+    deleteCache () {
+      this.$http.delete(`/api/project/cache/${this.projectPath}`)
     }
   }
 }

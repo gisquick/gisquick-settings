@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -126,7 +127,7 @@ func (s *Server) handleAppWs() http.HandlerFunc {
 }
 
 func (s *Server) handleProjectFiles() http.HandlerFunc {
-	projectsDir := s.config.ProjectsDirectory
+	projectsDir := s.config.ProjectsRoot
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
@@ -154,7 +155,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 		Files []fs.File `json:"files"`
 	}
 
-	projectsDir := s.config.ProjectsDirectory
+	projectsDir := s.config.ProjectsRoot
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "user")
@@ -266,7 +267,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 }
 
 func (s *Server) handleNewUpload() http.HandlerFunc {
-	qgisExtRegex := regexp.MustCompile("(?i).*\\.(qgs|qgz)$")
+	qgisExtRegex := regexp.MustCompile(`(?i).*\.(qgs|qgz)$`)
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
 
@@ -347,7 +348,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 
 		// Extract files
 		for _, f := range archiveReader.File {
-			dest := filepath.Join(s.config.ProjectsDirectory, user.Username, f.Name)
+			dest := filepath.Join(s.config.ProjectsRoot, user.Username, f.Name)
 			if !f.FileInfo().IsDir() {
 				fr, _ := f.Open()
 				err = fs.SaveToFile(fr, dest)
@@ -373,7 +374,7 @@ func (s *Server) handleDownload() http.HandlerFunc {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.zip", directory))
 		defer writer.Close()
 
-		projectDir := filepath.Join(s.config.ProjectsDirectory, username, directory)
+		projectDir := filepath.Join(s.config.ProjectsRoot, username, directory)
 		projectDir, _ = filepath.Abs(projectDir)
 		files, err := fs.ListDir(projectDir, false)
 		if err != nil {
@@ -404,9 +405,9 @@ func (s *Server) handleProjectDelete() http.HandlerFunc {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory)
-		err := os.RemoveAll(dest)
-		if err != nil {
+
+		dest := filepath.Join(s.config.ProjectsRoot, username, directory)
+		if err := os.RemoveAll(dest); err != nil {
 			http.Error(w, "FileServer Error", http.StatusInternalServerError)
 			return
 		}
@@ -436,7 +437,7 @@ func (s *Server) handleSaveConfig() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, ".gisquick", projectName+".json")
+		dest := filepath.Join(s.config.ProjectsRoot, username, directory, ".gisquick", projectName+".json")
 		err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
 		if err != nil {
 			http.Error(w, "FileServer Error", http.StatusInternalServerError)
@@ -469,7 +470,7 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		dest := filepath.Join(s.config.ProjectsDirectory, username, directory, projectName+".meta")
+		dest := filepath.Join(s.config.ProjectsRoot, username, directory, projectName+".meta")
 		defer r.Body.Close()
 
 		// TODO: create saveConfigFile(data []byte, dest string) function on server or in fs
@@ -497,12 +498,12 @@ func (s *Server) handleGetProjectMeta() http.HandlerFunc {
 		directory := chi.URLParam(r, "directory")
 		filename := chi.URLParam(r, "name")
 
-		regexString := fmt.Sprintf("%s(_(\\d{10}))?\\.meta$", regexp.QuoteMeta(filename))
+		regexString := fmt.Sprintf(`%s(_(\d{10}))?\.meta$`, regexp.QuoteMeta(filename))
 		regex := regexp.MustCompile(regexString)
 		var matchedFilename string
 		matchedTimestamp := -1
 
-		root := filepath.Join(s.config.ProjectsDirectory, username, directory)
+		root := filepath.Join(s.config.ProjectsRoot, username, directory)
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -569,6 +570,40 @@ func (s *Server) handleGetMap() http.HandlerFunc {
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		// w.Header().Set("Content-Length", resp.Header.Get("Content-Length"))
 		io.Copy(w, resp.Body)
+	}
+}
+
+func (s *Server) handleCacheDelete() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(contextKeyUser).(*User)
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		projectName := chi.URLParam(r, "name")
+		if !user.IsSuperuser && user.Username != username {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		projectPath := filepath.Join(username, directory, projectName)
+		cacheName := fmt.Sprintf("%x", md5.Sum([]byte(projectPath)))
+		cacheDir := filepath.Join(s.config.MapCacheRoot, cacheName)
+		tmpDir := filepath.Join(s.config.MapCacheRoot, fmt.Sprintf("obsolete_%s_%d", cacheName, time.Now().Unix()))
+
+		if err := os.Rename(cacheDir, tmpDir); err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf("Failed to delete map cache of project: %s (%s)\n", projectPath, err)
+				http.Error(w, "Server error", http.StatusForbidden)
+				return
+			}
+		} else {
+			// delete asynchronosly
+			go func() {
+				fmt.Println("Removing obsole cache directory:", tmpDir)
+				if err := os.RemoveAll(tmpDir); err != nil {
+					log.Printf("Failed to delete map cache of project: %s (%s)\n", projectPath, err)
+				}
+			}()
+		}
+		w.Write([]byte(""))
 	}
 }
 

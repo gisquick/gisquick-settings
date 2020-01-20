@@ -36,11 +36,12 @@ func parseFileSize(value string) int64 {
 
 func main() {
 	config := server.Config{
-		ProjectsDirectory: os.Getenv("PROJECTS_DIR"),
-		AppServer:         os.Getenv("SERVER_URL"),
-		MapServer:         os.Getenv("MAPSERVER_URL"),
-		MaxFileUpload:     parseFileSize(optEnv("MAX_FILE_UPLOAD", "100M")),
-		MaxProjectSize:    parseFileSize(optEnv("MAX_PROJECT_SIZE", "200M")),
+		ProjectsRoot:   os.Getenv("PROJECTS_ROOT"),
+		MapCacheRoot:   os.Getenv("MAP_CACHE_ROOT"),
+		AppServer:      os.Getenv("SERVER_URL"),
+		MapServer:      os.Getenv("MAPSERVER_URL"),
+		MaxFileUpload:  parseFileSize(optEnv("MAX_FILE_UPLOAD", "100M")),
+		MaxProjectSize: parseFileSize(optEnv("MAX_PROJECT_SIZE", "200M")),
 	}
 
 	devPtr := flag.Bool("dev", false, "development mode")
