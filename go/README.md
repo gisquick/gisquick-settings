@@ -10,7 +10,7 @@ go get github.com/gorilla/websocket
 ### Run server
 ```
 export GOPATH=`pwd`/libs:`pwd`
-export PROJECTS_DIR=./publish/
+export PROJECTS_ROOT=./publish/
 export SERVER_URL=http://localhost:8000
 ...
 go run cmd/server/main.go -dev

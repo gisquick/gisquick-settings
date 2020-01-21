@@ -6,7 +6,10 @@ Server, plugin and web app for publishing QGIS projects in Gisquick
 ```
 docker build -t gisquick/settings .
 ```
-
+Image for development:
+```
+docker build -f Dockerfile.dev -t gisquick/settings-dev .
+```
 
 ## Development
 
