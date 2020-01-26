@@ -405,9 +405,10 @@ class WebGisPlugin(object):
                     info["geom_type"] = ('POINT', 'LINE', 'POLYGON', None, None)[layer.geometryType()]
                     info["labels"] = layer.labelsEnabled()
                     info["attributes"] = self.get_layer_attributes(layer)
+                    info["queryable"] = bool(info["attributes"] and layer.id() not in non_identifiable_layers)
                     if info["attributes"]:
                         fields = layer.fields()
-                        info['pk_attributes'] = [
+                        info["pk_attributes"] = [
                             fields.at(index).name() for index in layer.dataProvider().pkAttributeIndexes()
                         ]
 
