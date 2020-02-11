@@ -79,7 +79,7 @@ export default {
     grid-template-columns: auto 1fr auto;
   }
   .header-bg {
-    background-color: #424242;
+    background-color: #3d3d3d;
     grid-column: 1 / 4;
     grid-row: 1 / 2;
   }

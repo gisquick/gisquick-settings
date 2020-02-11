@@ -174,7 +174,7 @@ export default {
   .left-panel {
     grid-column: 1 / 2;
     overflow: auto;
-    background-color: #3f3f3f;
+    background-color: #353535;
     min-width: 280px;
   }
   .content {
