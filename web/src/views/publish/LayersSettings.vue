@@ -31,6 +31,11 @@
       class="ml-2 mr-1 my-1 elevation-2"
       @click:row="onClick"
     >
+      <template v-slot:header.layer="{}">
+        <router-link to="layers/permissions">
+          <v-icon class="px-1 py-1">vpn_lock</v-icon>
+        </router-link>
+      </template>
       <template v-slot:leaf.publish="{ item }">
         <v-checkbox
           v-model="item.publish"

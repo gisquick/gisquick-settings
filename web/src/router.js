@@ -59,7 +59,7 @@ export default new VueRouter({
       redirect: { name: 'settings' },
       children: [
         {
-          path: 'settings/:page?',
+          path: 'settings/:page(.*)?',
           name: 'settings',
           component: Config
         },

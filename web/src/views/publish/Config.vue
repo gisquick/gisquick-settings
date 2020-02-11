@@ -13,6 +13,7 @@
 import DefaultRedirect from '@/mixins/DefaultRedirect'
 import ProjectSettings from '@/views/publish/ProjectSettings'
 import LayersView from '@/views/publish/LayersSettings'
+import LayersPermissions from '@/views/publish/LayersPermissions'
 import TopicsEditor from '@/components/TopicsEditor'
 
 export default {
@@ -57,6 +58,12 @@ export default {
           props: {
             topics: this.config.topics,
             layers: this.store.overlays
+          }
+        },
+        'layers/permissions': {
+          component: LayersPermissions,
+          props: {
+            config: this.config
           }
         }
       }
