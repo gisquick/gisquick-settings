@@ -1,6 +1,8 @@
 <script>
-import { VIcon, VLayout } from 'vuetify/lib'
+import { VIcon, VLayout, VBtn, VTextField } from 'vuetify/lib'
 import _xor from 'lodash/xor'
+
+import { layersGroups, filterLayers, searchRegex } from '@/utils'
 
 const DefaultValue = {
   functional: true,
@@ -22,9 +24,32 @@ function layerIcon (layer) {
   }
 }
 
+/* Filter that test/match also groups */
+export function filterLayers2(items, test) {
+  const list = []
+  items.forEach(item => {
+    if (item.layers) {
+      if (test(item)) {
+        list.push(item)
+      } else {
+        const children = filterLayers2(item.layers, test)
+        if (children.length) {
+          list.push({
+            ...item,
+            layers: children
+          })
+        }
+      }
+    } else if (test(item)) {
+      list.push(item)
+    }
+  })
+  return list
+}
+
 export default {
   name: 'LayersTable',
-  components: { VIcon, VLayout },
+  components: { VIcon, VLayout, VBtn, VTextField },
   props: {
     label: String,
     items: Array,
@@ -35,6 +60,20 @@ export default {
     },
     selected: String,
     selectedClass: String
+  },
+  data () {
+    return {
+      filter: ''
+    }
+  },
+  computed: {
+    displayedItems () {
+      if (this.filter) {
+        const regex = searchRegex(this.filter)
+        return filterLayers(this.items, l => l.name.search(regex) !== -1)
+      }
+      return this.items
+    }
   },
   methods: {
     toggleGroup (item) {
@@ -96,7 +135,7 @@ export default {
               <v-icon
                 class="mr-1"
                 style={paddingStyle}
-                vOn:click_stop={e => this.toggleGroup(item)}
+                vOn:click_stop={() => this.toggleGroup(item)}
               >
                 {groupIcon}
               </v-icon>
@@ -106,13 +145,40 @@ export default {
         </tr>
       )
       return [groupNode, ...children]
+    },
+    expandAll () {
+      const groups = layersGroups(this.items)
+      this.$emit('update:opened', groups.map(g => g.name))
+    },
+    renderLayersHeader (h) {
+      const slot = this.$scopedSlots['header.layer']
+      return (
+        <th class="header">
+          <v-layout class="align-center">
+            <v-icon onClick={this.expandAll}>mdi-folder-open</v-icon>
+            <span class="mx-2">{this.label}</span>
+            <span class="spacer"/>
+            <v-text-field
+              placeholder="Filter"
+              class="filter my-0 py-0 mx-2"
+              append-icon="search"
+              rounded={true}
+              clearable={true}
+              hide-details={true}
+              value={this.filter}
+              onInput={v => this.filter = v}
+            />
+            {slot ? slot() : null}
+          </v-layout>
+        </th>
+      )
     }
   },
   render (h) {
-    const { items } = this.$props
+    const items = this.displayedItems
     const children = items.map(item => item.layers ? this.renderGroup(h, item, 0) : this.renderLeaf(h, item, 0))
     const headers = [
-      <th class="header text-left">{this.label}</th>,
+      this.renderLayersHeader(h),
       ...this.headers.map(header => <th class={`header text-${header.align || 'center'}`} width="1">{header.text}</th>)
     ]
     return (
@@ -142,14 +208,21 @@ export default {
   border-spacing: 0;
   th, td {
     padding: 0 12px;
+    white-space: nowrap;
+  }
+  th {
+    .filter {
+      max-width: 320px;
+      background-color: #fff;
+    }
   }
   td {
     height: 32px;
   }
   .header {
     background-color: #eee;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
     font-weight: 500;

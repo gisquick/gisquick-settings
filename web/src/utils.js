@@ -1,4 +1,14 @@
 
+import escapeRegExp from 'lodash/escapeRegExp'
+
+function removeAccents (text) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+export function searchRegex (text) {
+  return new RegExp(escapeRegExp(removeAccents(text)), 'i')
+}
+
 /* Converts array of map scales to tile resolutions. */
 export function scalesToResolutions(scales, units, dpi = 96) {
   const factor = {

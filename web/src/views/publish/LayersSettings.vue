@@ -1,5 +1,5 @@
 <template>
-  <v-layout>
+  <v-layout class="layers-settings">
     <layers-table
       label="Base layers"
       :items="config.base_layers"
@@ -22,7 +22,7 @@
     </layers-table>
 
     <layers-table
-      label="Overlay layers"
+      label="Layers"
       :items="config.overlays"
       :headers="overlaysHeaders"
       :opened.sync="opened"
@@ -122,7 +122,7 @@ export default {
   },
   methods: {
     onClick (item) {
-      if (this.config.base_layers.includes(item) || this.config.overlays.includes(item)) {
+      if (this.config.base_layers.find(l => l.name === item.name) || this.config.overlays.find(l => l.name === item.name)) {
         this.selected = item.name
       }
     },
@@ -146,6 +146,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.layers-settings {
+  overflow: hidden;
+  max-height: 100%;
+  flex: 1 1;
+  .table-container {
+    overflow: auto;
+  }
+}
 .swap.v-btn {
   position: absolute;
   top: 50%;
