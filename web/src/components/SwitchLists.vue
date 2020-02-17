@@ -39,7 +39,7 @@
       :disabled="!selected"
       @click="switchItem"
     >
-      <v-icon>swap_horiz</v-icon>
+      <v-icon>swap_horizontal_circle</v-icon>
     </v-btn>
 
     <v-layout class="box column grid-r">
@@ -191,6 +191,7 @@ export default {
   border-radius: 3px;
   min-height: 0;
   max-height: 100%;
+  min-width: 240px;
 }
 .scrollable {
   max-height: 100%;

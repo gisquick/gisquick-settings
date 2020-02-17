@@ -31,11 +31,16 @@
       </v-list>
       </input-container>
       <v-divider/>
-      <v-layout class="shrink my-1">
-        <v-btn text @click="addRole">
+      <div class="toolbar shrink">
+        <v-btn
+          text
+          :disabled="!accessControl"
+          @click="addRole"
+        >
           <v-icon class="mr-2">add_circle</v-icon>
           <span>Add</span>
         </v-btn>
+        <v-divider vertical/>
         <v-btn
           text
           :disabled="!selectedRole"
@@ -44,44 +49,44 @@
           <v-icon class="mr-2">remove_circle</v-icon>
           <span>Remove</span>
         </v-btn>
-      </v-layout>
+      </div>
     </v-layout>
 
     <v-layout
       v-if="selectedRole"
       class="form column my-1"
     >
-      <v-text-field
-        label="Name"
-        class="mx-2 my-2 shrink"
-        v-model="selectedRole.name"
-        hide-details
-      />
-      <v-divider/>
+      <v-row class="mx-2 my-2 shrink no-gutters">
+        <v-text-field
+          label="Name"
+          class="col mr-1"
+          v-model="selectedRole.name"
+          hide-details
+        />
+        <v-select
+          label="Authentication"
+          v-model="selectedRole.auth"
+          :items="authTypes"
+          class="col ml-1"
+          prepend-icon="security"
+          hide-details
+        />
+      </v-row>
 
       <!-- Users -->
-      <v-layout class="column shrink">
-        <v-layout class="align-center header px-2 py-0 grey lighten-3">
+      <v-layout
+        v-if="selectedRole.auth === 'users'"
+        class="column shrink"
+      >
+        <v-layout class="align-center header px-2 py-0">
           <span>Users</span>
-          <v-spacer/>
-          <v-btn
-            icon class="mx-1"
-            @click="editUsers = !editUsers"
-            :color="editUsers ? 'primary' : ''"
-            :ripple="false"
-          >
-            <v-icon>edit</v-icon>
-          </v-btn>
         </v-layout>
-        <v-divider/>
         <v-text-field
-          v-if="!editUsers"
           class="mx-2 my-2"
-          :value="roleUsersText"
           placeholder="No users asigned"
-          xappend-icon="edit"
-          @click:append="editUsers = !editUsers"
-          xdisabled
+          :value="roleUsersText"
+          :append-outer-icon="editUsers ? 'edit_off' : 'edit'"
+          @click:append-outer="editUsers = !editUsers"
           readonly
           hide-details
         />
@@ -102,7 +107,7 @@
         :items="config.overlays"
         :headers="overlaysHeaders"
         :opened.sync="opened"
-        class="layers my-1"
+        class="layers"
       >
         <template v-slot:leaf.view="{ item }">
           <v-checkbox
@@ -184,8 +189,22 @@ export default {
         }
       ]
     },
+    authTypes () {
+      return [
+        {
+          text: 'All',
+          value: 'all'
+        }, {
+          text: 'All authenticated',
+          value: 'authenticated'
+        }, {
+          text: 'Selected users',
+          value: 'users'
+        }
+      ]
+    },
     roleUsersText () {
-      return this.selectedRole && this.selectedRole.users.join(', ')
+      return this.selectedRole && (this.selectedRole.users || []).join(', ')
     },
     layersPermissions () {
       return this.selectedRole && this.selectedRole.permissions.layers
@@ -201,13 +220,52 @@ export default {
     this.fetchUsers()
   },
   watch: {
-    selectedRole (role) {
-      if (role) {
-        this.initPermissions(role)
+    accessControl: {
+      immediate: true,
+      handler (accessControl) {
+        this.selectedRole = null
+        if (accessControl && accessControl.roles) {
+          accessControl.roles = accessControl.roles.map(role => {
+            const layerKeys = layersList(this.config.overlays).map(l => l.serverName)
+            const layerPerms = {}
+            layerKeys.forEach(key => {
+              layerPerms[key] = role.permissions.layers[key] || {
+                view: true,
+                insert: false,
+                update: false,
+                delete: false
+              }
+            })
+            return {
+              ...role,
+              permissions: { layers: layerPerms }
+            }
+          })
+        }
       }
     }
   },
   methods: {
+    createRole (params) {
+      const layersPerms = {}
+      layersList(this.config.overlays).forEach(l => {
+        layersPerms[l.serverName] = {
+          view: true,
+          insert: false,
+          update: false,
+          delete: false
+        }
+      })
+      return {
+        name: 'New',
+        auth: 'users',
+        ...params,
+        users: [],
+        permissions: {
+          layers: layersPerms
+        }
+      }
+    },
     setProjectAccess (enabled) {
       enabled = Boolean(enabled)
       if (this.accessControl) {
@@ -215,24 +273,20 @@ export default {
       } else {
         const accessControl = {
           enabled,
-          roles: []
+          roles: [
+            this.createRole({
+              name: 'Public',
+              auth: this.config.authentication === 'all' ? 'all' : 'authenticated'
+            }
+          )]
         }
         this.$set(this.config, 'access_control', accessControl)
       }
     },
-    initPermissions (role) {
-      const permissions = {}
-      layersList(this.config.overlays).forEach(l => {
-        permissions[l.serverName] = {
-          view: true,
-          insert: false,
-          update: false,
-          delete: false
-        }
-      })
-      role.permissions.layers = {
-        ...permissions,
-        ...(role.permissions.layers || {})
+    setAuthentication (type) {
+      this.selectedRole.auth = type
+      if (type !== 'users' && this.selectedRole.users.length) {
+        this.selectedRole.users = []
       }
     },
     fetchUsers () {
@@ -251,13 +305,7 @@ export default {
         })
     },
     addRole () {
-      this.accessControl.roles.push({
-        name: 'New',
-        users: [],
-        permissions: {
-          layers: {}
-        }
-      })
+      this.accessControl.roles.push(this.createRole())
     },
     removeRole () {
       this.accessControl.roles = this.accessControl.roles.filter(r => r !== this.selectedRole)
@@ -268,16 +316,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.box {
-  border: 1px solid #ccc;
-  background-color: #fff;
-}
 .header {
   font-weight: 500;
   font-size: 15px;
   grid-column: 1 / 3;
-  border-bottom: 1px solid #ccc;
+  border: solid #ccc;
+  border-width: 1px 0 1px 0;
   background-color: #eee;
+  min-height: 40px;
 }
 .grid {
   display: grid;
@@ -286,10 +332,16 @@ export default {
   overflow: hidden;
   max-height: 100%;
   flex: 1 1;
+  border: solid #ccc;
+  border-width: 0 1px 1px 1px;
 }
 .roles {
   overflow: auto;
   border-right: 1px solid #ccc;
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
 }
 .layers {
   overflow: visible;
