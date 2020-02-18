@@ -82,4 +82,7 @@ a {
 .theme--light.v-text-field > .v-input__control > .v-input__slot:before {
   border-color: rgba(0, 0, 0, 0.15);
 }
+.v-divider--vertical {
+  min-height: 0;
+}
 </style>

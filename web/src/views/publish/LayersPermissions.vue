@@ -56,21 +56,25 @@
       v-if="selectedRole"
       class="form column my-1"
     >
-      <v-row class="mx-2 my-2 shrink no-gutters">
-        <v-text-field
-          label="Name"
-          class="col mr-1"
-          v-model="selectedRole.name"
-          hide-details
-        />
-        <v-select
-          label="Authentication"
-          v-model="selectedRole.auth"
-          :items="authTypes"
-          class="col ml-1"
-          prepend-icon="security"
-          hide-details
-        />
+      <v-row class="mx-1 my-2 shrink no-gutters">
+        <v-col>
+          <v-text-field
+            label="Name"
+            class="mx-2"
+            v-model="selectedRole.name"
+            hide-details
+          />
+        </v-col>
+        <v-col>
+          <v-select
+            label="Authentication"
+            v-model="selectedRole.auth"
+            :items="authTypes"
+            class="mx-2"
+            prepend-icon="security"
+            hide-details
+          />
+        </v-col>
       </v-row>
 
       <!-- Users -->
@@ -78,11 +82,11 @@
         v-if="selectedRole.auth === 'users'"
         class="column shrink"
       >
-        <v-layout class="align-center header px-2 py-0">
+        <v-layout class="align-center header px-3 py-0">
           <span>Users</span>
         </v-layout>
         <v-text-field
-          class="mx-2 my-2"
+          class="mx-3 my-2"
           placeholder="No users asigned"
           :value="roleUsersText"
           :append-outer-icon="editUsers ? 'edit_off' : 'edit'"
@@ -92,7 +96,7 @@
         />
         <switch-lists
           v-if="editUsers"
-          class="mx-2 my-2"
+          class="mx-3 my-2"
           item-text="label"
           item-value="username"
           :items="users"
