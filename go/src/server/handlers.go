@@ -322,18 +322,24 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 		}
 
 		// Check archive structure - all files in one root directory, with QGIS project
-		rootFile := archiveReader.File[0]
-		if !rootFile.FileInfo().IsDir() {
-			log.Printf("Upload error: invalid archive structure. Expected single directory. (user: %s)\n", user.Username)
-			http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
+		invalidArchiveHandler := func(msg string) {
+			filenames := make([]string, len(archiveReader.File))
+			for i, f := range archiveReader.File {
+				filenames[i] = f.Name
+			}
+			log.Printf("Upload error: %s (user: %s)\n", msg, user.Username)
+			log.Printf("Archive files: [%s]\n", strings.Join(filenames, ", "))
+			http.Error(w, msg, http.StatusBadRequest)
+		}
+		rootDir, _ := filepath.Split(archiveReader.File[0].Name)
+		if len(rootDir) == 0 {
+			invalidArchiveHandler("Invalid project archive - not a single directory")
 			return
 		}
-
 		hasQgisProject := false
-		for _, f := range archiveReader.File[1:] {
-			if !strings.HasPrefix(f.Name, rootFile.Name) {
-				log.Printf("Upload error: invalid archive structure. Expected single directory. (user: %s)\n", user.Username)
-				http.Error(w, "Invalid archive: bad structure", http.StatusBadRequest)
+		for _, f := range archiveReader.File {
+			if !strings.HasPrefix(f.Name, rootDir) {
+				invalidArchiveHandler("Invalid project archive - not a single directory")
 				return
 			}
 			if qgisExtRegex.Match([]byte(f.Name)) {
@@ -341,8 +347,7 @@ func (s *Server) handleNewUpload() http.HandlerFunc {
 			}
 		}
 		if !hasQgisProject {
-			log.Printf("Upload error: invalid archive structure. Missing QGIS project. (user: %s)\n", user.Username)
-			http.Error(w, "Invalid archive: missing QGIS project", http.StatusBadRequest)
+			invalidArchiveHandler("Invalid project archive - missing QGIS project")
 			return
 		}
 
@@ -383,7 +388,7 @@ func (s *Server) handleDownload() http.HandlerFunc {
 			return
 		}
 		for _, f := range *files {
-			part, err := writer.Create(f.Path)
+			part, err := writer.Create(filepath.Join(directory, f.Path))
 			if err != nil {
 				http.Error(w, "FileServer error", http.StatusInternalServerError)
 				return
