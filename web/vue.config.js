@@ -1,7 +1,12 @@
+const CompressionPlugin = require('compression-webpack-plugin')
+
 module.exports = {
   // transpileDependencies: ['vuetify'],
   publicPath: process.env.NODE_ENV === 'production' ? '/user/' : '/',
   assetsDir: 'static',
+  configureWebpack: {
+    plugins: [new CompressionPlugin()]
+  },
   chainWebpack: config => {
     const svgRule = config.module.rule('svg')
     svgRule.uses.clear()
