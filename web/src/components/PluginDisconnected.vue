@@ -4,13 +4,13 @@
     <img src="@/assets/qgis_disconnected.svg" class="my-2">
     <small class="mt-5 mb-2">You can download required plugin here (64-bit OS):</small>
     <v-layout shrink>
-      <v-btn href="/media/files/gisquick2_lin64.zip" text>
+      <v-btn href="https://projects.gisquick.org/media/files/gisquick2_lin64.zip" text>
         <icon name="linux"/>
       </v-btn>
-      <v-btn href="/media/files/gisquick2_win64.zip" text>
+      <v-btn href="https://projects.gisquick.org/media/files/gisquick2_win64.zip" text>
         <icon name="windows"/>
       </v-btn>
-      <v-btn href="/media/files/gisquick2_darwin64.zip" text>
+      <v-btn href="https://projects.gisquick.org/media/files/gisquick2_darwin64.zip" text>
         <icon name="apple"/>
       </v-btn>
     </v-layout>
