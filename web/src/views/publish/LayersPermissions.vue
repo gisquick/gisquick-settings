@@ -115,7 +115,7 @@
       >
         <template v-slot:leaf.view="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName].view"
+            v-model="layersPermissions[item.serverName || item.name].view"
             color="grey darken-1"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -124,7 +124,7 @@
         </template>
         <template v-slot:leaf.insert="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName].insert"
+            v-model="layersPermissions[item.serverName || item.name].insert"
             color="grey darken-1"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -133,7 +133,7 @@
         </template>
         <template v-slot:leaf.update="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName].update"
+            v-model="layersPermissions[item.serverName || item.name].update"
             color="grey darken-1"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -142,7 +142,7 @@
         </template>
         <template v-slot:leaf.delete="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName].delete"
+            v-model="layersPermissions[item.serverName || item.name].delete"
             color="grey darken-1"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -230,7 +230,7 @@ export default {
         this.selectedRole = null
         if (accessControl && accessControl.roles) {
           accessControl.roles = accessControl.roles.map(role => {
-            const layerKeys = layersList(this.config.overlays).map(l => l.serverName)
+            const layerKeys = layersList(this.config.overlays).map(l => l.serverName || l.name)
             const layerPerms = {}
             layerKeys.forEach(key => {
               layerPerms[key] = role.permissions.layers[key] || {
@@ -253,7 +253,7 @@ export default {
     createRole (params) {
       const layersPerms = {}
       layersList(this.config.overlays).forEach(l => {
-        layersPerms[l.serverName] = {
+        layersPerms[l.serverName || l.name] = {
           view: true,
           insert: false,
           update: false,
