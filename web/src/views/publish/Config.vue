@@ -4,7 +4,7 @@
       v-if="route"
       :is="route.component"
       v-bind="route.props"
-      class="grow"
+      class="fill-height"
     />
   </keep-alive>
 </template>

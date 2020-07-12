@@ -6,7 +6,7 @@ const text = Array(200).fill('.').join(' ')
 export default {
   functional: true,
   render (h) {
-    return <span class="expander">{text}</span>
+    return <div class="expander">{text}</div>
   }
 }
 </script>
@@ -14,6 +14,7 @@ export default {
 <style scoped>
 .expander {
   line-height: 0;
+  height: 0;
   visibility: hidden;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="grid column box">
+  <div class="grid">
     <v-layout class="align-center header px-2 py-2">
       <span>Roles</span>
       <v-spacer/>

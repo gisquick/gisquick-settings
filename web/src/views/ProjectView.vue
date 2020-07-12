@@ -36,12 +36,12 @@
       <v-spacer/>
     </v-layout>
 
-    <v-layout class="column content my-2 mx-1">
+    <div class="content my-2 mx-1">
       <expander/>
       <keep-alive>
         <router-view v-if="projectConfig"/>
       </keep-alive>
-    </v-layout>
+    </div>
   </div>
 </template>
 
