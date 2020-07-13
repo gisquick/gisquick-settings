@@ -12,7 +12,7 @@
       hide-default-footer
     >
       <template v-slot:item.title="{ item, value }">
-        <router-link :to="{path: '/'+item.project}">{{ value }}</router-link>
+        <router-link :to="{ path: '/' + item.project }">{{ value || item.project }}</router-link>
       </template>
       <template v-slot:item.url="{ value }">
         <a :href="value" target="_blank">
