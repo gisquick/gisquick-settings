@@ -202,6 +202,9 @@ export default {
           text: 'All authenticated',
           value: 'authenticated'
         }, {
+          text: 'Anonymous',
+          value: 'anonymous'
+        }, {
           text: 'Selected users',
           value: 'users'
         }
