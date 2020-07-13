@@ -413,8 +413,13 @@ class WebGisPlugin(object):
                         ]
 
                 if provider_type == "wms":
-                    info["format"] = source_params["format"][0]
                     info["url"] = source_params["url"][0]
+                    img_format = source_params.get("format", [None])[0]
+                    if not img_format:
+                        img_format = os.path.splitext(info["url"])[1].replace(".", "image/")
+
+                    info["format"] = img_format
+
                     info["dpi"] = layer.dataProvider().dpi()
                     if "layers" in source_params:
                         info["wms_layers"] = source_params["layers"]

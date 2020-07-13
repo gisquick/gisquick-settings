@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -35,6 +36,7 @@ func Checksum(path string) (string, error) {
 // ListDir export
 func ListDir(root string, checksum bool) (*[]File, error) {
 	var files []File = []File{}
+	excludeExtRegex := regexp.MustCompile(`(?i).*\.(gpkg-wal|gpkg-shm)$`)
 
 	root, _ = filepath.Abs(root)
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -49,7 +51,7 @@ func ListDir(root string, checksum bool) (*[]File, error) {
 				}
 			}
 			relPath := path[len(root)+1:]
-			if !strings.HasPrefix(relPath, ".gisquick") && !strings.HasSuffix(relPath, "~") {
+			if !strings.HasPrefix(relPath, ".gisquick") && !strings.HasSuffix(relPath, "~") && !excludeExtRegex.Match([]byte(relPath)) {
 				files = append(files, File{relPath, hash, info.Size(), info.ModTime()})
 			}
 		}
