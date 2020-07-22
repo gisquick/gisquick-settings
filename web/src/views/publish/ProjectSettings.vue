@@ -125,7 +125,7 @@
 </template>
 
 <script>
-import { extend } from 'ol/extent'
+import { extend, getCenter } from 'ol/extent'
 import { required } from '@/validators'
 import { layersList, scalesToResolutions } from '@/utils'
 import ScalesList from '@/components/ScalesList'
@@ -198,6 +198,7 @@ export default {
     zoomToScale (scale) {
       const res = scalesToResolutions([scale], this.config.units)[0]
       const olMap = this.$refs.mapPreview.map
+      olMap.getView().setCenter(getCenter(this.config.extent))
       olMap.getView().setResolution(res)
     },
     updateScales (scales) {
