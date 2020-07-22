@@ -60,16 +60,11 @@ module.exports = {
   devServer: {
     proxy: {
       '^/ws': {
-        target: 'ws://localhost:8001',
-        secure: false,
+        target: 'ws://localhost',
         ws: true
       },
-      '^/api/project/': {
-        target: 'http://localhost:8001'
-      },
       '^/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true
+        target: 'http://localhost'
       }
     }
   }
