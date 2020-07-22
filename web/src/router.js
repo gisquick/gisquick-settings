@@ -35,7 +35,7 @@ export default new VueRouter({
           meta: { requiresPlugin: true }
         },
         {
-          path: 'config/:page?',
+          path: 'config/:page(.*)?',
           name: 'publish-config',
           component: Config
         },

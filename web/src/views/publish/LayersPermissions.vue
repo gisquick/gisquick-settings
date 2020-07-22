@@ -116,7 +116,7 @@
         <template v-slot:leaf.view="{ item }">
           <v-checkbox
             v-model="layersPermissions[item.serverName || item.name].view"
-            color="grey darken-1"
+            color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
             hide-details
@@ -125,7 +125,7 @@
         <template v-slot:leaf.insert="{ item }">
           <v-checkbox
             v-model="layersPermissions[item.serverName || item.name].insert"
-            color="grey darken-1"
+            color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
             hide-details
@@ -134,7 +134,7 @@
         <template v-slot:leaf.update="{ item }">
           <v-checkbox
             v-model="layersPermissions[item.serverName || item.name].update"
-            color="grey darken-1"
+            color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
             hide-details
@@ -143,7 +143,7 @@
         <template v-slot:leaf.delete="{ item }">
           <v-checkbox
             v-model="layersPermissions[item.serverName || item.name].delete"
-            color="grey darken-1"
+            color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
             hide-details

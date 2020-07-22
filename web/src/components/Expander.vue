@@ -1,7 +1,7 @@
 
 <script>
 
-const text = Array(200).fill('.').join(' ')
+const text = Array(100).fill('_').join(' ')
 
 export default {
   functional: true,

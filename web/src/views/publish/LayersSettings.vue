@@ -13,7 +13,7 @@
       <template v-slot:leaf.publish="{ item }">
         <v-checkbox
           v-model="item.publish"
-          color="grey darken-1"
+          color="secondary"
           class="my-0 py-1 justify-center"
           :ripple="false"
           hide-details
@@ -39,7 +39,7 @@
       <template v-slot:leaf.publish="{ item }">
         <v-checkbox
           v-model="item.publish"
-          color="grey darken-1"
+          color="secondary"
           class="my-0 py-1 justify-center"
           :ripple="false"
           hide-details
@@ -48,16 +48,19 @@
       <template v-slot:leaf.hidden="{ item }">
         <v-checkbox
           v-model="item.hidden"
-          color="grey darken-1"
+          color="secondary"
           class="my-0 py-1 justify-center"
           :ripple="false"
           hide-details
         />
       </template>
       <template v-slot:leaf.attributes="{ item }">
-        <v-btn text>
+        <router-link
+          class="layout row justify-center"
+          :to="`layers/${item.name}/attributes`"
+        >
           <icon name="attribute-table" size="18"/>
-        </v-btn>
+        </router-link>
       </template>
     </layers-table>
 
@@ -108,9 +111,9 @@ export default {
         }, {
           text: 'Hidden',
           value: 'hidden'
-        // }, {
-        //   text: 'Attributes',
-        //   value: 'attributes'
+        }, {
+          text: 'Attributes',
+          value: 'attributes'
         }
       ]
     },

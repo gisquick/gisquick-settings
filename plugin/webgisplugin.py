@@ -15,7 +15,7 @@ from urllib.parse import parse_qs
 
 # Import the PyQt and QGIS libraries
 import PyQt5.uic
-from qgis.core import Qgis, QgsMapLayer, QgsProject, QgsLayerTreeLayer, QgsLayoutItemLabel
+from qgis.core import Qgis, QgsMapLayer, QgsProject, QgsLayerTreeLayer, QgsLayoutItemLabel, QgsWkbTypes
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
@@ -403,6 +403,7 @@ class WebGisPlugin(object):
                 # if layer.isSpatial()
                 if layer_type == "vector":
                     info["geom_type"] = ('POINT', 'LINE', 'POLYGON', None, None)[layer.geometryType()]
+                    info["wkb_type"] = QgsWkbTypes.displayString(layer.wkbType())
                     info["labels"] = layer.labelsEnabled()
                     info["attributes"] = self.get_layer_attributes(layer)
                     info["queryable"] = bool(info["attributes"] and layer.id() not in non_identifiable_layers)
@@ -490,6 +491,14 @@ class WebGisPlugin(object):
         scales, _ = project.readListEntry("Scales", "/ScalesList")
         scales = [int(s.split(":")[1]) for s in scales]
 
+        projections = {}
+        crs_list = [project_crs] + [l.crs() for l in project.mapLayers().values()]
+        for crs in crs_list:
+            if crs.authid() not in projections:
+                projections[crs.authid()] = {
+                    "is_geographic": crs.isGeographic(),
+                    "proj4": crs.toProj4()
+                }
         data = {
             "file": project.absoluteFilePath(),
             "directory": project.absolutePath(),
@@ -510,7 +519,8 @@ class WebGisPlugin(object):
             "extent": map_canvas.fullExtent().toRectF().getCoords(),
             "server": {
                 "wms_add_geometry": project.readBoolEntry ("WMSAddWktGeometry", "")[0]
-            }
+            },
+            "projections": projections
         }
         return data
 
