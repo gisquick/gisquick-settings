@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sync"
 
@@ -85,7 +86,11 @@ var (
 
 func (s *Server) jsonResponse(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		log.Printf("Failed to serialize JSON: %s\n", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+	}
 }
 
 func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface{}) error {
@@ -100,7 +105,7 @@ func (s *Server) apiRoutes() {
 	s.router.Get("/ws/plugin", s.loginRequired(s.handlePluginWs()))
 	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
 	s.router.Get("/api/project/files/{user}/{directory}", s.loginRequired(s.handleProjectFiles()))
-	s.router.Post("/api/project/upload", s.loginRequired(s.handleNewUpload()))
+	s.router.Post("/api/project/upload", s.loginRequired(s.handleArchiveUpload()))
 	s.router.Post("/api/project/upload/{user}/{directory}", s.loginRequired(s.handleUpload()))
 	s.router.Get("/api/project/download/{user}/{directory}", s.loginRequired(s.handleDownload()))
 	s.router.Delete("/api/project/delete/{user}/{directory}", s.loginRequired(s.handleProjectDelete()))

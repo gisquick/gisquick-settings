@@ -266,7 +266,7 @@ func (s *Server) handleUpload() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleNewUpload() http.HandlerFunc {
+func (s *Server) handleArchiveUpload() http.HandlerFunc {
 	qgisExtRegex := regexp.MustCompile(`(?i).*\.(qgs|qgz)$`)
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(contextKeyUser).(*User)
@@ -435,12 +435,12 @@ func (s *Server) handleSaveConfig() http.HandlerFunc {
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+		defer r.Body.Close()
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Invalid data", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
 
 		dest := filepath.Join(s.config.ProjectsRoot, username, directory, ".gisquick", projectName+".json")
 		err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
@@ -596,7 +596,7 @@ func (s *Server) handleCacheDelete() http.HandlerFunc {
 		if err := os.Rename(cacheDir, tmpDir); err != nil {
 			if !os.IsNotExist(err) {
 				log.Printf("Failed to delete map cache of project: %s (%s)\n", projectPath, err)
-				http.Error(w, "Server error", http.StatusForbidden)
+				http.Error(w, "Server error", http.StatusInternalServerError)
 				return
 			}
 		} else {
