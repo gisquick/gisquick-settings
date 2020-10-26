@@ -114,6 +114,11 @@ func (s *Server) apiRoutes() {
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
 	s.router.Delete("/api/project/cache/{user}/{directory}/{name}", s.loginRequired(s.handleCacheDelete()))
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
+
+	s.router.Get("/api/project/script/{user}/{directory}", s.loginRequired(s.handleScriptsInfo()))
+	s.router.Post("/api/project/script/{user}/{directory}", s.loginRequired(s.handleUploadScript()))
+	s.router.Delete("/api/project/script/{user}/{directory}/{module}", s.loginRequired(s.handleDeleteScript()))
+	s.router.Get("/api/project/static/{user}/{directory}/*", s.handleStaticFile())
 }
 
 func (s *Server) devRoutes() {
