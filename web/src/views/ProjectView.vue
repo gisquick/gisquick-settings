@@ -1,5 +1,6 @@
 <template>
   <div class="page">
+    <scripts-store/>
     <portal to="menu-breadcrumbs" v-if="pageVisible && projectConfig">
       <v-icon>keyboard_arrow_right</v-icon>
       <v-btn text color="orange" style="text-transform:none">
@@ -50,12 +51,13 @@ import isEqual from 'lodash/isEqual'
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
+import ScriptsStore from '@/components/ScriptsStore'
 import { layersList, filterLayers } from '@/utils'
 
 export default {
   name: 'Project',
   mixins: [ Page ],
-  components: { ProjectMenu, Timeline },
+  components: { ProjectMenu, Timeline, ScriptsStore },
   props: {
     user: String,
     folder: String,

@@ -21,18 +21,27 @@
           :ripple="false"
         />
       </template>
-      <template v-slot:item.widget="{ item }">
-        <attribute-widget
+      <template v-slot:item.content_type="{ item }">
+        <attribute-content-type
           :attribute="item"
-          class="my-1 pt-0"
+          class="my-1 pt-0 mx-auto"
         />
       </template>
     </v-data-table>
+
+    <v-divider/>
+    <components-select
+      class="shrink align-start mx-2 mt-4"
+      label="Info Panel"
+      v-model="layer.infopanel_component"
+    />
   </v-layout>
 </template>
 
 <script>
-import AttributeWidget from '@/components/AttributeWidget.vue'
+import AttributeContentType from '@/components/AttributeContentType.vue'
+import ScriptsSettings from '@/components/ScriptsSettings.vue'
+import ComponentsSelect from '@/components/ComponentsSelect.vue'
 
 function lookupTable (items) {
   // return items.reduce((lookup, v) => ({...lookup, [v]: true }), {})
@@ -42,7 +51,8 @@ function lookupTable (items) {
 }
 
 export default {
-  components: { AttributeWidget },
+  name: 'LayerAttributes',
+  components: { AttributeContentType, ScriptsSettings, ComponentsSelect },
   props: {
     layer: Object
   },
@@ -60,23 +70,28 @@ export default {
       return [
         {
           text: 'Name',
-          sortable: true,
           value: 'name'
         }, {
           text: 'Alias',
           value: 'alias'
         }, {
           text: 'Type',
-          value: 'type'
+          value: 'type',
+          sortable: false
         }, {
-          text: 'Display',
-          value: 'widget'
+          text: 'Content Type',
+          value: 'content_type',
+          sortable: false
         }, {
           text: 'Attribute Table',
-          value: 'attribute_table'
+          value: 'attribute_table',
+          sortable: false,
+          align: 'center'
         }, {
           text: 'Info Panel',
-          value: 'info_panel'
+          value: 'info_panel',
+          sortable: false,
+          align: 'center'
         }
       ]
     }
@@ -109,5 +124,6 @@ export default {
 .box {
   border: 1px solid #ccc;
   overflow: auto;
+  background-color: #fff;
 }
 </style>

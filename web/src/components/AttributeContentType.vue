@@ -22,7 +22,8 @@ export default {
       return this.dataType !== 'TEXT'
     },
     value () {
-      return this.attribute.widget || null
+      const val = this.attribute.content_type
+      return val === undefined ? null : val
     },
     widgetOptions () {
       return [
@@ -34,19 +35,19 @@ export default {
           value: 'url'
         }, {
           text: 'Media image file',
-          value: {
-            type: 'media',
-            accept: 'image/*'
-          }
+          value: 'media;image/*'
         }
       ]
     }
   },
   methods: {
-    updateValue (val) {
-      const value = val !== null ? val : undefined
-      // this.attribute.widget = value
-      this.$set(this.attribute, 'widget', value)
+    updateValue (value) {
+      // value = value !== null ? value : undefined
+      if (value === null) {
+        this.$delete(this.attribute, 'content_type')
+      } else {
+        this.$set(this.attribute, 'content_type', value)
+      }
     }
   }
 }
