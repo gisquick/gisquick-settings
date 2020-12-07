@@ -406,7 +406,7 @@ class WebGisPlugin(object):
                     info["wkb_type"] = QgsWkbTypes.displayString(layer.wkbType())
                     info["labels"] = layer.labelsEnabled()
                     info["attributes"] = self.get_layer_attributes(layer)
-                    info["queryable"] = bool(info["attributes"] and layer.id() not in non_identifiable_layers)
+                    info["queryable"] = bool(info["attributes"]) and layer.id() not in non_identifiable_layers and layer.id() in wfs_layers
                     if info["attributes"]:
                         fields = layer.fields()
                         info["pk_attributes"] = [
