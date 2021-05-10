@@ -2,7 +2,7 @@
   <v-select
     :items="widgetOptions"
     :disabled="disabled"
-    :value="value"
+    :value="value || null"
     @input="updateValue"
     item-value="value"
     hide-details
@@ -12,7 +12,8 @@
 <script>
 export default {
   props: {
-    attribute: Object
+    attribute: Object,
+    value: String
   },
   computed: {
     dataType () {
@@ -20,10 +21,6 @@ export default {
     },
     disabled () {
       return this.dataType !== 'TEXT'
-    },
-    value () {
-      const val = this.attribute.content_type
-      return val === undefined ? null : val
     },
     widgetOptions () {
       return [
@@ -42,12 +39,7 @@ export default {
   },
   methods: {
     updateValue (value) {
-      // value = value !== null ? value : undefined
-      if (value === null) {
-        this.$delete(this.attribute, 'content_type')
-      } else {
-        this.$set(this.attribute, 'content_type', value)
-      }
+      this.$emit('input', value)
     }
   }
 }

@@ -58,7 +58,7 @@ export default {
       type: Array,
       default: () => []
     },
-    selected: String,
+    selected: [Object, String],
     selectedClass: String
   },
   data () {
@@ -79,6 +79,9 @@ export default {
     toggleGroup (item) {
       // this.opened = _xor(this.opened, [item.name])
       this.$emit('update:opened', _xor(this.opened, [item.name]))
+    },
+    itemKey (item) {
+      return item
     },
     renderLeaf (h, item, depth) {
       let cmp
@@ -107,7 +110,7 @@ export default {
         return <td>{comp}</td>
       })
       return (
-        <tr class={{[this.selectedClass]: item.name === this.selected}}>
+        <tr class={{[this.selectedClass]: this.itemKey(item) === this.selected}}>
           <td>{cmp}</td>
           {values}
         </tr>
@@ -124,7 +127,7 @@ export default {
         paddingLeft: `${28 * depth}px`,
       }
       const groupNode = (
-        <tr class={{[this.selectedClass]: item.name === this.selected}}>
+        <tr class={{[this.selectedClass]: this.itemKey(item) === this.selected}}>
           <td
             colspan={this.headers.length + 1}
             class="group-header py-1"

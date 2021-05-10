@@ -37,34 +37,38 @@ export default {
       return this.store.projectPath
     },
     routes () {
+      const { overlays, settings } = this.store
       return [
         {
           path: 'project',
           component: ProjectSettings,
           props: {
-            layers: this.store.projectInfo.layers,
+            layers: this.store.projectConfig.layers,
             config: this.config,
-            projectPath: this.projectPath
+            projectPath: this.projectPath,
+            settings
           }
         }, {
           path: 'layers',
           component: LayersView,
           props: {
-            order: this.store.projectInfo.layers.map(l => l.name),
-            config: this.config
+            order: this.store.projectConfig.layers.map(l => l.name),
+            config: this.config,
+            settings
           }
         }, {
           path: 'topics',
           component: TopicsEditor,
           props: {
-            topics: this.config.topics,
-            layers: this.store.overlays
+            topics: settings.topics,
+            layers: overlays
           }
         }, {
           path: 'layers/permissions',
           component: LayersPermissions,
           props: {
-            config: this.config
+            layers: overlays,
+            settings
           }
         }, {
           path: path => {
@@ -73,8 +77,9 @@ export default {
           },
           component: LayerAttributes,
           props: ({ layername }) => {
-            const layer = layersList(this.store.overlays).find(l => l.name === layername)
-            return { layer }
+            const layer = layersList(overlays).find(l => l.name === layername)
+            const layerSettings = settings.layers[layer.id]
+            return { layer, layerSettings }
           }
         }
       ]

@@ -23,8 +23,10 @@
       </template>
       <template v-slot:item.content_type="{ item }">
         <attribute-content-type
-          :attribute="item"
           class="my-1 pt-0 mx-auto"
+          :attribute="item"
+          :value="attributesSettings[item.name].content_type"
+          @input="setContentType(item, $event)"
         />
       </template>
     </v-data-table>
@@ -40,8 +42,8 @@
 
 <script>
 import AttributeContentType from '@/components/AttributeContentType.vue'
-import ScriptsSettings from '@/components/ScriptsSettings.vue'
 import ComponentsSelect from '@/components/ComponentsSelect.vue'
+import { createMap, setNestedProperty, deleteNestedProperty } from '@/helpers'
 
 function lookupTable (items) {
   // return items.reduce((lookup, v) => ({...lookup, [v]: true }), {})
@@ -52,9 +54,10 @@ function lookupTable (items) {
 
 export default {
   name: 'LayerAttributes',
-  components: { AttributeContentType, ScriptsSettings, ComponentsSelect },
+  components: { AttributeContentType, ComponentsSelect },
   props: {
-    layer: Object
+    layer: Object,
+    layerSettings: Object
   },
   data () {
     return {
@@ -65,6 +68,9 @@ export default {
   computed: {
     attributes () {
       return this.layer.attributes
+    },
+    attributesSettings () {
+      return createMap(this.attributes, 'name', a => this.layerSettings?.attributes?.[a.name] || {})
     },
     columns () {
       return [
@@ -97,23 +103,33 @@ export default {
     }
   },
   watch: {
-    layer: {
+    layerSettings: {
       immediate: true,
-      handler (layer) {
-        this.lookupAttr = lookupTable(layer.attr_table_fields || layer.attributes.map(a => a.name))
-        this.lookupInfo = lookupTable(layer.info_panel_fields || layer.attributes.map(a => a.name))
+      handler (ls) {
+        this.lookupAttr = lookupTable(ls.attr_table_fields || this.layer.attributes.map(a => a.name))
+        this.lookupInfo = lookupTable(ls.info_panel_fields || this.layer.attributes.map(a => a.name))
       }
     },
     lookupAttr: {
       deep: true,
       handler (lookup) {
-        this.$set(this.layer, 'attr_table_fields', Object.keys(lookup).filter(k => lookup[k]))
+        this.$set(this.layerSettings, 'attr_table_fields', Object.keys(lookup).filter(k => lookup[k]))
       }
     },
     lookupInfo: {
       deep: true,
       handler (lookup) {
-        this.$set(this.layer, 'info_panel_fields', Object.keys(lookup).filter(k => lookup[k]))
+        this.$set(this.layerSettings, 'info_panel_fields', Object.keys(lookup).filter(k => lookup[k]))
+      }
+    }
+  },
+  methods: {
+    setContentType (attr, value) {
+      const key = `attributes.${attr.name}.content_type`
+      if (value !== null) {
+        setNestedProperty(this.layerSettings, key, value)
+      } else {
+        deleteNestedProperty(this.layerSettings, key)
       }
     }
   }

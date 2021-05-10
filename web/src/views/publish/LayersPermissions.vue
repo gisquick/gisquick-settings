@@ -108,14 +108,14 @@
       <!-- Layers -->
       <layers-table
         label="Layer"
-        :items="config.overlays"
+        :items="layers"
         :headers="overlaysHeaders"
         :opened.sync="opened"
         class="layers"
       >
         <template v-slot:leaf.view="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName || item.name].view"
+            v-model="layersPermissions[item.id].view"
             color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -124,7 +124,7 @@
         </template>
         <template v-slot:leaf.insert="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName || item.name].insert"
+            v-model="layersPermissions[item.id].insert"
             color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -133,7 +133,7 @@
         </template>
         <template v-slot:leaf.update="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName || item.name].update"
+            v-model="layersPermissions[item.id].update"
             color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -142,7 +142,7 @@
         </template>
         <template v-slot:leaf.delete="{ item }">
           <v-checkbox
-            v-model="layersPermissions[item.serverName || item.name].delete"
+            v-model="layersPermissions[item.id].delete"
             color="secondary"
             class="my-0 py-1 justify-center"
             :ripple="false"
@@ -159,12 +159,14 @@ import LayersTable from '@/components/LayersTable'
 import InputContainer from '@/components/InputContainer'
 import SwitchLists from '@/components/SwitchLists'
 import { layersList } from '@/utils'
+import { createMap } from '@/helpers'
 
 export default {
   name: 'LayersPermissions',
   components: { LayersTable, InputContainer, SwitchLists },
   props: {
-    config: Object
+    layers: Array,
+    settings: Object
   },
   data () {
     return {
@@ -172,7 +174,7 @@ export default {
       users: [],
       selectedRole: null,
       selectedUser: null,
-      editUsers: false,
+      editUsers: false
     }
   },
   computed: {
@@ -217,7 +219,7 @@ export default {
       return this.selectedRole && this.selectedRole.permissions.layers
     },
     accessControl () {
-      return this.config.access_control
+      return this.settings.access_control
     },
     roles () {
       return (this.accessControl && this.accessControl.roles) || []
@@ -232,20 +234,27 @@ export default {
       handler (accessControl) {
         this.selectedRole = null
         if (accessControl && accessControl.roles) {
+          const layers = layersList(this.layers)
           accessControl.roles = accessControl.roles.map(role => {
-            const layerKeys = layersList(this.config.overlays).map(l => l.serverName || l.name)
-            const layerPerms = {}
-            layerKeys.forEach(key => {
-              layerPerms[key] = role.permissions.layers[key] || {
-                view: true,
-                insert: false,
-                update: false,
-                delete: false
-              }
+            // const layerKeys = layersList(this.layers).map(l => l.id)
+            // const layerPerms = {}
+            // layerKeys.forEach(key => {
+            //   layerPerms[key] = role.permissions.layers[key] || {
+            //     view: true,
+            //     insert: false,
+            //     update: false,
+            //     delete: false
+            //   }
+            // })
+            const layersPerms = createMap(layers, 'id', l => role.permissions.layers[l.id] || {
+              view: true,
+              insert: false,
+              update: false,
+              delete: false
             })
             return {
               ...role,
-              permissions: { layers: layerPerms }
+              permissions: { layers: layersPerms }
             }
           })
         }
@@ -254,15 +263,12 @@ export default {
   },
   methods: {
     createRole (params) {
-      const layersPerms = {}
-      layersList(this.config.overlays).forEach(l => {
-        layersPerms[l.serverName || l.name] = {
-          view: true,
-          insert: false,
-          update: false,
-          delete: false
-        }
-      })
+      const layersPerms = createMap(layersList(this.layers), 'id', () => ({
+        view: true,
+        insert: false,
+        update: false,
+        delete: false
+      }))
       return {
         name: 'New',
         auth: 'users',
@@ -283,11 +289,11 @@ export default {
           roles: [
             this.createRole({
               name: 'Public',
-              auth: this.config.authentication === 'all' ? 'all' : 'authenticated'
+              auth: this.settings.authentication === 'all' ? 'all' : 'authenticated'
             }
           )]
         }
-        this.$set(this.config, 'access_control', accessControl)
+        this.$set(this.settings, 'access_control', accessControl)
       }
     },
     setAuthentication (type) {

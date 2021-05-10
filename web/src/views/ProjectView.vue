@@ -29,8 +29,8 @@
           ]
         }"
         :publish="{
-          label: 'Update',
-          disabled: !configChanged
+          label: this.originalSettings === null ? 'Publish' : 'Update',
+          disabled: !metaChanged && !settingsChanged
         }"
         @publish="saveChanges"
       />
@@ -40,7 +40,7 @@
     <div class="content my-2 mx-1">
       <expander/>
       <keep-alive>
-        <router-view v-if="projectConfig"/>
+        <router-view v-if="projectConfig && settings"/>
       </keep-alive>
     </div>
   </div>
@@ -48,11 +48,17 @@
 
 <script>
 import isEqual from 'lodash/isEqual'
+import keyBy from 'lodash/keyBy'
+import mapValues from 'lodash/mapValues'
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
 import ScriptsStore from '@/components/ScriptsStore'
-import { layersList, filterLayers } from '@/utils'
+import { layersList, filterLayers, scalesToResolutions } from '@/utils'
+
+function clone (data) {
+  return JSON.parse(JSON.stringify(data))
+}
 
 export default {
   name: 'Project',
@@ -65,10 +71,10 @@ export default {
   },
   data () {
     return {
-      layers: [],
       projectConfig: null,
       projectConfigOriginal: null,
-      projectInfo: null
+      originalSettings: null,
+      settings: null
     }
   },
   computed: {
@@ -76,55 +82,116 @@ export default {
       return [this.user, this.folder, this.projectName].join('/')
     },
     overlays () {
-      return this.projectConfig && filterLayers(this.projectConfig.overlays, l => l.publish)
+      const { layers, overlays } = this.settings
+      const items = this.projectConfig.layers.filter(l => overlays.includes(l.id || l.name))
+      return filterLayers(items, l => layers[l.id]?.publish)
     },
-    configChanged () {
+    metaChanged () {
       return !isEqual(this.projectConfig, this.projectConfigOriginal)
+    },
+    settingsChanged () {
+      return !isEqual(this.settings, this.originalSettings)
     }
   },
   watch: {
     projectPath: {
       immediate: true,
-      handler (projectName) {
-        if (projectName) {
-          this.fetchProjectConfig()
-        } else {
-          this.projectConfig = null
-        }
-      }
+      handler: 'loadProject'
     }
   },
   methods: {
-    fetchProjectConfig () {
-      this.$http.get(`/api/project/meta/${this.projectPath}`)
-        .then(resp => {
-          // TODO: load projectInfo file when available
-          const layers = [...resp.data.base_layers, ...resp.data.overlays]
-          // resp.data.layers = resp.data.overlays
-          layersList(layers)
-            .filter(l => l.publish === undefined)
-            .forEach(l => {
-              l.publish = true
-            })
-          this.projectInfo = {
-            layers
+    async loadProject (projectName) {
+      if (projectName) {
+        try {
+          const meta = await this.fetchProjectMeta()
+          const settings = await this.fetchGisquickSettings()
+          this.projectConfig = meta
+          this.projectConfigOriginal = clone(meta)
+
+          // meta.layers.forEach(l => Object.defineProperty(l, 'settings', { configurable: true, value: data.layers[l.id] }))
+          if (settings) {
+            this.settings = settings
+            this.originalSettings = clone(settings)
+          } else {
+            this.settings = this.newSettings(meta)
+            this.originalSettings = null
           }
-          this.projectConfig = resp.data
-          this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
-        })
-        .catch(err => {
+          const newLayers = layersList(this.projectConfig.layers).filter(l => !this.settings.layers[l.id])
+          newLayers.forEach(l => this.$set(settings.layers, l.id, {
+            publish: true,
+            hidden: false,
+            attributes: {}
+          }))
+        } catch (err) {
           console.error(err)
-          this.projectConfig = null
-          this.projectInfo = null
-        })
+          this.$notification.error('Failed to load project data')
+        }
+      } else {
+        this.projectConfig = null
+        this.projectConfigOriginal = null
+        this.settings = null
+        this.originalSettings = null
+      }
     },
-    saveChanges () {
-      const project = this.projectConfig.project || this.this.projectPath
-      this.$http.post(`/api/project/meta/${project}`, this.projectConfig)
-        .then(() => {
-          this.$notification.show('Updated!')
-          this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
+    async fetchProjectMeta () {
+      const { data } = await this.$http.get(`/api/project/meta/${this.projectPath}`)
+      return data
+    },
+    newSettings (meta) {
+      const layers = mapValues(keyBy(layersList(meta.layers), 'id'), () => ({
+        publish: true,
+        hidden: false,
+        attributes: {}
+      }))
+      return {
+        layers,
+        extent: meta.extent,
+        scales: meta.scales,
+        tile_resolutions: scalesToResolutions(meta.scales, meta.units),
+        title: meta.title,
+        overlays: meta.layers.map(l => l.id || l.name),
+        base_layers: [],
+        authentication: 'all',
+        use_mapcache: false,
+        topics: []
+      }
+    },
+    async fetchGisquickSettings () {
+      const { data } = await this.$http
+        .get(`/api/project/settings/${this.projectPath}`)
+        .catch(err => {
+          if (err.response.status === 404) {
+            return { data: null }
+          }
+          throw err
         })
+      return data
+    },
+    async saveMeta () {
+      const project = this.projectConfig.project || this.projectPath
+      await this.$http.post(`/api/project/meta/${project}`, this.projectConfig)
+      this.projectConfigOriginal = JSON.parse(JSON.stringify(this.projectConfig))
+    },
+    async saveSettings () {
+      const project = this.projectConfig.project || this.projectPath
+      await this.$http.post(`/api/project/settings/${project}`, this.settings)
+      this.originalSettings = JSON.parse(JSON.stringify(this.settings))
+    },
+    async saveChanges () {
+      const tasks = []
+      if (this.metaChanged) {
+        tasks.push(this.saveMeta())
+      }
+      if (this.settingsChanged) {
+        tasks.push(this.saveSettings())
+      }
+      try {
+        await Promise.all(tasks)
+        this.$notification.show('Updated!')
+      } catch (err) {
+        console.error(err)
+        this.$notification.error('Failed to save changes!')
+      }
     }
   }
 }

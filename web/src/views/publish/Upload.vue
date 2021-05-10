@@ -148,6 +148,10 @@ export default {
     }
   },
   methods: {
+    navigateToProjectSettings () {
+      const [ user, folder, projectName ] = this.projectPath.split('/')
+      this.$router.push({ name: 'settings', params: { user, folder, projectName } })
+    },
     fetchLocalFiles () {
       this.fetchingLocalFiles = true
       this.$ws.request('ProjectFiles')
@@ -175,27 +179,13 @@ export default {
           this.fetchingServerFiles = false
         })
     },
-    saveConfig () {
-      this.$http.post(`/api/project/config/${this.projectPath}`, this.config)
-        .then(() => {
-
-          const layers = JSON.parse(JSON.stringify(this.config.layers))
-          layersList(layers).forEach(l => {
-            delete l.wfs
-            delete l.source
-            l.publish = true
-          })
-          this.store.projectConfig = {
-            ..._omit(this.config, ['layers', 'file', 'directory']),
-            base_layers: [],
-            // overlays: mapLayers(layers, l => _omit(l, ['wfs', 'source'])),
-            overlays: layers,
-            authentication: 'all',
-            use_mapcache: false,
-            selection_color: '#ffff00ff',
-            topics: []
-          }
-        })
+    async saveConfig () {
+      if (!this.config.publish_date) {
+        this.config.publish_date = new Date().toUTCString()
+        this.config.publish_date_unix = new Date().getTime()/1000|0
+      }
+      await this.$http.post(`/api/project/meta/${this.projectPath}`, this.config)
+      this.navigateToProjectSettings()
     },
     async uploadFiles () {
       const { newFiles, modifiedFiles } = this.$refs.filesBrowser
@@ -218,6 +208,7 @@ export default {
       } finally {
         this.fetchServerFiles()
         this.uploadProgress = null
+        // this.navigateToProjectSettings()
       }
     },
     clearServerFiles () {

@@ -86,7 +86,7 @@ export default {
       const project = config.project || this.project
       const url = `/api/project/map?MAP=${project}.qgs`
 
-      const layers = layersList(config.overlays).filter(l => l.visible)
+      const layers = layersList(config.layers).filter(l => l.visible)
       layers.sort((a, b) => (b.drawing_order || 0) - (a.drawing_order || 0))
 
       let projection = getProj(config.projection.code)

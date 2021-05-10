@@ -4,37 +4,37 @@
       <v-text-field
         label="Title"
         placeholder=" "
-        v-model="config.title"
+        v-model="settings.title"
         :rules="validators.title"
       />
       <v-select
         label="Authentication"
         :items="authOpts"
-        v-model="config.authentication"
+        v-model="settings.authentication"
       />
       <label><small>Extent:</small></label>
       <v-layout class="extent ml-2">
         <v-text-field
           label="X-Min"
-          v-model.number="config.extent[0]"
+          v-model.number="settings.extent[0]"
           type="number"
           class="mr-2"
         />
         <v-text-field
           label="Y-Min"
-          v-model.number="config.extent[1]"
+          v-model.number="settings.extent[1]"
           type="number"
           class="mr-2"
         />
         <v-text-field
           label="X-Max"
-          v-model.number="config.extent[2]"
+          v-model.number="settings.extent[2]"
           type="number"
           class="mr-2"
         />
         <v-text-field
           label="Y-Max"
-          v-model.number="config.extent[3]"
+          v-model.number="settings.extent[3]"
           type="number"
           class="mr-2"
         />
@@ -83,7 +83,7 @@
       <v-layout row ml-0 mr-2 justify-space-between>
         <scales-list
           label="Scales"
-          :value="config.scales"
+          :value="settings.scales"
           @input="updateScales"
           @click:scale="zoomToScale"
           class="scales-list mt-1 shrink mr-2"
@@ -108,7 +108,7 @@
           label="Map cache"
           color="primary"
           class="mt-2"
-          v-model="config.use_mapcache"
+          v-model="settings.use_mapcache"
         />
         <v-btn
           text
@@ -146,7 +146,8 @@ export default {
   props: {
     layers: Array,
     config: Object,
-    projectPath: String
+    projectPath: String,
+    settings: Object
   },
   data () {
     return {
@@ -193,17 +194,17 @@ export default {
   },
   methods: {
     setExtent (extent) {
-      this.config.extent = roundExtent(extent)
+      this.settings.extent = roundExtent(extent)
     },
     zoomToScale (scale) {
       const res = scalesToResolutions([scale], this.config.units)[0]
       const olMap = this.$refs.mapPreview.map
-      olMap.getView().setCenter(getCenter(this.config.extent))
+      olMap.getView().setCenter(getCenter(this.settings.extent))
       olMap.getView().setResolution(res)
     },
     updateScales (scales) {
-      this.config.scales = scales
-      this.config.tile_resolutions = scalesToResolutions(scales, this.config.units)
+      this.settings.scales = scales
+      this.settings.tile_resolutions = scalesToResolutions(scales, this.config.units)
     },
     onExtentDraw (extent) {
       this.setExtent(extent)
