@@ -2,8 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/go-chi/chi"
@@ -101,20 +107,20 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 	return ws.WriteJSON(message{Type: name, Data: jsonData})
 }
 
-/*
 func (s *Server) getProjectMetaFile(username, directory, projectName string) (string, error) {
 	regexString := fmt.Sprintf(`%s(_(\d{10}))?\.meta$`, regexp.QuoteMeta(projectName))
 	regex := regexp.MustCompile(regexString)
 	var matchedFilename string
 	matchedTimestamp := -1
 
-	root := filepath.Join(s.config.ProjectsRoot, username, directory)
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".meta") {
-			groups := regex.FindStringSubmatch(info.Name())
+	dirPath := filepath.Join(s.config.ProjectsRoot, username, directory)
+	files, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		return "", err
+	}
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".meta") {
+			groups := regex.FindStringSubmatch(file.Name())
 			if len(groups) == 3 {
 				timestamp, _ := strconv.Atoi(groups[2])
 				if timestamp > matchedTimestamp {
@@ -123,14 +129,9 @@ func (s *Server) getProjectMetaFile(username, directory, projectName string) (st
 				}
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		return "", err
 	}
-	return filepath.Join(username, directory, matchedFilename), nil
+	return filepath.Join(s.config.ProjectsRoot, username, directory, matchedFilename), nil
 }
-*/
 
 func (s *Server) apiRoutes() {
 	s.router.Get("/ws/plugin", s.loginRequired(s.handlePluginWs()))
@@ -143,6 +144,8 @@ func (s *Server) apiRoutes() {
 	s.router.Post("/api/project/config/{user}/{directory}/{name}", s.loginRequired(s.handleSaveConfig()))
 	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
+	s.router.Get("/api/project/settings/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectSettings()))
+	s.router.Post("/api/project/settings/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectSettings()))
 
 	s.router.Delete("/api/project/cache/{user}/{directory}/{name}", s.loginRequired(s.handleCacheDelete()))
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))

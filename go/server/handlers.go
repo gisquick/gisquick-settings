@@ -19,7 +19,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -476,6 +475,7 @@ func (s *Server) handleSaveProjectMeta() http.HandlerFunc {
 			return
 		}
 		dest := filepath.Join(s.config.ProjectsRoot, username, directory, projectName+".meta")
+		r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)
 		defer r.Body.Close()
 
 		// TODO: create saveConfigFile(data []byte, dest string) function on server or in fs
@@ -501,51 +501,80 @@ func (s *Server) handleGetProjectMeta() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := chi.URLParam(r, "user")
 		directory := chi.URLParam(r, "directory")
-		filename := chi.URLParam(r, "name")
+		name := chi.URLParam(r, "name")
 
-		regexString := fmt.Sprintf(`%s(_(\d{10}))?\.meta$`, regexp.QuoteMeta(filename))
-		regex := regexp.MustCompile(regexString)
-		var matchedFilename string
-		matchedTimestamp := -1
-
-		root := filepath.Join(s.config.ProjectsRoot, username, directory)
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() && strings.HasSuffix(info.Name(), ".meta") {
-				groups := regex.FindStringSubmatch(info.Name())
-				if len(groups) == 3 {
-					timestamp, _ := strconv.Atoi(groups[2])
-					if timestamp > matchedTimestamp {
-						matchedFilename = groups[0]
-						matchedTimestamp = timestamp
-					}
-				}
-			}
-			return nil
-		})
-		if err != nil && !os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if matchedFilename == "" {
+		metaPath, err := s.getProjectMetaFile(username, directory, name)
+		// if err != nil && !os.IsNotExist(err) {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		if metaPath == "" {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
 
-		jsonContent, err := ioutil.ReadFile(filepath.Join(root, matchedFilename))
+		jsonContent, err := ioutil.ReadFile(metaPath)
 		if err != nil {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
-		var meta map[string]interface{}
-		if err = json.Unmarshal(jsonContent, &meta); err != nil {
+		var data map[string]interface{}
+		if err = json.Unmarshal(jsonContent, &data); err != nil {
 			http.Error(w, "Error", http.StatusInternalServerError)
 			return
 		}
-		meta["project"] = filepath.Join(username, directory, strings.TrimSuffix(matchedFilename, filepath.Ext(matchedFilename)))
-		s.jsonResponse(w, meta)
+		// data["project"] = filepath.Join(username, directory, strings.TrimSuffix(meta, filepath.Ext(meta)))
+		// data["ows_project"] =
+		s.jsonResponse(w, data)
+	}
+}
+
+func (s *Server) handleSaveProjectSettings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(contextKeyUser).(*User)
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		projectName := chi.URLParam(r, "name")
+		if !user.IsSuperuser && user.Username != username {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		dest := filepath.Join(s.config.ProjectsRoot, username, directory, projectName+".json")
+		r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)
+		defer r.Body.Close()
+
+		// TODO: create saveConfigFile(data []byte, dest string) function on server or in fs
+		data, _ := ioutil.ReadAll(r.Body)
+		var out bytes.Buffer
+		if err := json.Indent(&out, data, "", "  "); err != nil {
+			log.Printf("Failed to format project settings: %s\n", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		if err := ioutil.WriteFile(dest, out.Bytes(), 0644); err != nil {
+			log.Printf("Failed to save project settings: %s\n", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		// save content as it is
+		// fs.SaveToFile(r.Body, dest)
+		w.Write([]byte(""))
+	}
+}
+
+func (s *Server) handleGetProjectSettings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := chi.URLParam(r, "user")
+		directory := chi.URLParam(r, "directory")
+		name := chi.URLParam(r, "name")
+		meta, err := s.getProjectMetaFile(username, directory, name)
+		if err != nil {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		settingsFile := strings.TrimSuffix(meta, ".meta") + ".json"
+		http.ServeFile(w, r, settingsFile)
+		// w.Write([]byte(settingsFile))
 	}
 }
 
