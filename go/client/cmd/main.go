@@ -11,11 +11,11 @@ static inline char* call_message_callback(message_callback ptr, char *msg) {
 */
 import "C"
 import (
-	"client"
 	"log"
 	"runtime"
 	"unsafe"
 
+	"github.com/gislab-npo/gisquick-settings/client"
 	"github.com/gorilla/websocket"
 )
 

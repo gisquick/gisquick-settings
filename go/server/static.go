@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fs"
 	"log"
 	"mime"
 	"mime/multipart"
@@ -11,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gislab-npo/gisquick-settings/fs"
 	"github.com/go-chi/chi"
 )
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"fs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,6 +18,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/gislab-npo/gisquick-settings/go/src/fs"
 	"github.com/gorilla/websocket"
 )
 

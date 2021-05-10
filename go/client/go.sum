@@ -1,0 +1,4 @@
+github.com/gislab-npo/gisquick-settings v0.0.0-20201207190211-733ed49c9ca9 h1:9iqLCLj5C4Z4USwDm7eP1PtVGNaqfhNkOdNJadbgnow=
+github.com/gislab-npo/gisquick-settings v0.0.0-20201207190211-733ed49c9ca9/go.mod h1:ZF2o1DCw0DaAfvhmMJYX95whHGDgD/9BE6e8oYz+aL8=
+github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
+github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

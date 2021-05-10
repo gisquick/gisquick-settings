@@ -1,0 +1,12 @@
+FROM golang:1.15-alpine
+
+RUN apk add --no-cache git
+ENV GOPATH=
+COPY ./fs/go.* /go/fs/
+COPY ./server/go.* /go/server/
+WORKDIR /go/server/
+RUN go mod download
+
+EXPOSE 8001
+
+CMD ["go", "run", "cmd/main.go", "-dev"]

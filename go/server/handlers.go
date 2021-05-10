@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"fs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gislab-npo/gisquick-settings/fs"
 	"github.com/go-chi/chi"
 )
 

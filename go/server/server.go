@@ -101,6 +101,37 @@ func (s *Server) sendJSONMessage(ws *websocket.Conn, name string, data interface
 	return ws.WriteJSON(message{Type: name, Data: jsonData})
 }
 
+/*
+func (s *Server) getProjectMetaFile(username, directory, projectName string) (string, error) {
+	regexString := fmt.Sprintf(`%s(_(\d{10}))?\.meta$`, regexp.QuoteMeta(projectName))
+	regex := regexp.MustCompile(regexString)
+	var matchedFilename string
+	matchedTimestamp := -1
+
+	root := filepath.Join(s.config.ProjectsRoot, username, directory)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".meta") {
+			groups := regex.FindStringSubmatch(info.Name())
+			if len(groups) == 3 {
+				timestamp, _ := strconv.Atoi(groups[2])
+				if timestamp > matchedTimestamp {
+					matchedFilename = groups[0]
+					matchedTimestamp = timestamp
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(username, directory, matchedFilename), nil
+}
+*/
+
 func (s *Server) apiRoutes() {
 	s.router.Get("/ws/plugin", s.loginRequired(s.handlePluginWs()))
 	s.router.Get("/ws/app", s.loginRequired(s.handleAppWs()))
@@ -112,6 +143,7 @@ func (s *Server) apiRoutes() {
 	s.router.Post("/api/project/config/{user}/{directory}/{name}", s.loginRequired(s.handleSaveConfig()))
 	s.router.Post("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleSaveProjectMeta()))
 	s.router.Get("/api/project/meta/{user}/{directory}/{name}", s.loginRequired(s.handleGetProjectMeta()))
+
 	s.router.Delete("/api/project/cache/{user}/{directory}/{name}", s.loginRequired(s.handleCacheDelete()))
 	s.router.Get("/api/project/map", s.loginRequired(s.handleGetMap()))
 
@@ -119,6 +151,9 @@ func (s *Server) apiRoutes() {
 	s.router.Post("/api/project/script/{user}/{directory}", s.loginRequired(s.handleUploadScript()))
 	s.router.Delete("/api/project/script/{user}/{directory}/{module}", s.loginRequired(s.handleDeleteScript()))
 	s.router.Get("/api/project/static/{user}/{directory}/*", s.handleStaticFile())
+
+	s.router.Get("/api/project/media/{user}/{directory}/*", s.loginRequired(s.handleMediaFile()))
+	s.router.Post("/api/project/media/{user}/{directory}", s.loginRequired(s.handleMediaFileUpload()))
 }
 
 func (s *Server) devRoutes() {

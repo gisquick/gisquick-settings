@@ -6,10 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"server"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/gislab-npo/gisquick-settings/server"
 )
 
 func optEnv(key, defaultValue string) string {

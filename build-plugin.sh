@@ -2,7 +2,7 @@
 
 rm -rf dist/ && mkdir dist
 
-# Compile binaries locally
+# Compile binaries locally (not up to date!)
 
 # export GOPATH=`pwd`/go/libs:`pwd`/go
 # go build -ldflags="-s -w" -buildmode=c-shared -o dist/linux_amd64/gisquick.so go/cmd/plugin/main.go
@@ -13,9 +13,9 @@ rm -rf dist/ && mkdir dist
 
 export UID=$(id -u)
 export GID=$(id -g)
-docker run -it --rm \
-	-v `pwd`/go:/src/go -v `pwd`/dist/:/dist -v `pwd`/cross-compile.sh:/src/cross-compile.sh \
-	--workdir /src \
+docker run --rm \
+	-v `pwd`/go/client:/src/client -v `pwd`/go/fs:/src/fs -v `pwd`/dist:/dist \
+	--workdir /src/client \
 	--user $UID:$GID \
 	dockercore/golang-cross ./cross-compile.sh
 
