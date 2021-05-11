@@ -9,6 +9,7 @@ export default {
   },
   mounted () {
     // console.log('mounted')
+    this.pageVisible = true
   },
   activated () {
     // console.log('activated')

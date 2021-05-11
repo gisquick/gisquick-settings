@@ -102,7 +102,7 @@ export default {
   watch: {
     user: 'fetchProjects'
   },
-  activated () {
+  mounted () {
     this.fetchProjects()
   },
   methods: {

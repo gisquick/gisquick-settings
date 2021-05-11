@@ -34,9 +34,7 @@
       </v-menu>
     </v-layout>
 
-    <keep-alive>
-      <router-view/>
-    </keep-alive>
+    <router-view/>
   </div>
 </template>
 
