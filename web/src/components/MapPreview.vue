@@ -39,7 +39,8 @@ import { layersList } from '@/utils'
 export default {
   props: {
     project: String,
-    config: Object
+    config: Object,
+    settings: Object
   },
   data () {
     return {
@@ -49,7 +50,7 @@ export default {
   },
   computed: {
     extent () {
-      return this.config.extent
+      return this.settings.extent
     }
   },
   mounted () {
@@ -79,7 +80,7 @@ export default {
   },
   methods: {
     createMap () {
-      const config = this.config
+      const { config, settings } = this
 
       // const timestamp = config.publish_date_unix
       // const project = timestamp ? `${this.project}_${timestamp}` : this.project
@@ -118,7 +119,7 @@ export default {
         this.loading = false
       })
       this.extentSource = new VectorSource({
-        features: [new Feature({ geometry: fromExtent(config.extent) })]
+        features: [new Feature({ geometry: fromExtent(settings.extent) })]
       })
       const extentLayer = new VectorLayer({
         source: this.extentSource,
@@ -137,14 +138,14 @@ export default {
         layers: [mapLayer, extentLayer],
         view: new View({
           projection: projection,
-          center: getCenter(config.extent),
+          center: getCenter(settings.extent),
           zoom: 0,
           // resolutions: config.tile_resolutions,
         }),
         interactions: defaults({mouseWheelZoom: false}).extend([zoomInteraction])
       })
       this.map.setTarget(this.$el)
-      this.map.getView().fit(this.config.extent, { padding: [50, 50, 50, 50] })
+      this.map.getView().fit(settings.extent, { padding: [50, 50, 50, 50] })
     }
   }
 }

@@ -94,10 +94,11 @@
             <small>Map Preview</small>
           </label>
           <map-preview
+            ref="mapPreview"
+            class="box grow"
             :project="projectPath"
             :config="config"
-            class="box grow"
-            ref="mapPreview"
+            :settings="settings"
           >
             <draw-extent v-if="drawToolActive" @draw="onExtentDraw"/>
           </map-preview>
