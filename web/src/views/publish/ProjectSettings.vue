@@ -12,81 +12,94 @@
         :items="authOpts"
         v-model="settings.authentication"
       />
-      <label><small>Extent:</small></label>
-      <v-layout class="extent ml-2">
-        <v-text-field
-          label="X-Min"
-          v-model.number="settings.extent[0]"
-          type="number"
-          class="mr-2"
-        />
-        <v-text-field
-          label="Y-Min"
-          v-model.number="settings.extent[1]"
-          type="number"
-          class="mr-2"
-        />
-        <v-text-field
-          label="X-Max"
-          v-model.number="settings.extent[2]"
-          type="number"
-          class="mr-2"
-        />
-        <v-text-field
-          label="Y-Max"
-          v-model.number="settings.extent[3]"
-          type="number"
-          class="mr-2"
-        />
-        <v-menu bottom max-height="400" min-width="220">
-          <template v-slot:activator="{ on }">
-            <v-btn
-              v-on="on"
-              class="mt-2"
-              icon
-            >
-              <v-icon>menu</v-icon>
-            </v-btn>
-          </template>
-          <v-list dense>
-            <v-list-item @click="drawToolActive = true">
-              <v-list-item-content>Draw on map</v-list-item-content>
-              <v-list-item-icon>
-                <v-icon>picture_in_picture</v-icon>
-              </v-list-item-icon>
-            </v-list-item>
-            <v-list-item
-              v-if="allLayersExtent"
-              @click="setExtent(allLayersExtent)"
-            >
-              <v-list-item-content>Extent of all layers</v-list-item-content>
-              <v-list-item-icon>
-                <v-icon>zoom_out_map</v-icon>
-              </v-list-item-icon>
-            </v-list-item>
-            <v-list-item-group>
-              <v-layout row align-center @click.stop="">
-                <v-divider/>
-                <small class="mx-2 my-1 grey--text">Use layer extent</small>
-                <v-divider/>
-              </v-layout>
-            </v-list-item-group>
-            <v-list-item
-              v-for="(layer, i) in extentLayers"
-              :key="i"
-              @click="setExtent(layer.extent)"
-              v-text="layer.name"
-            />
-          </v-list>
-        </v-menu>
-      </v-layout>
-      <v-layout row ml-0 mr-2 justify-space-between>
+      <div
+        v-for="{ settingField, title } in extentFields"
+        :key="settingField"
+        class="extent-field"
+      >
+        <label><small v-text="title"/></label>
+        <v-layout class="extent">
+          <div class="marker" :class="settingField"/>
+          <v-text-field
+            label="X-Min"
+            v-model.number="settings[settingField][0]"
+            type="number"
+            class="mr-2"
+          />
+          <v-text-field
+            label="Y-Min"
+            v-model.number="settings[settingField][1]"
+            type="number"
+            class="mr-2"
+          />
+          <v-text-field
+            label="X-Max"
+            v-model.number="settings[settingField][2]"
+            type="number"
+            class="mr-2"
+          />
+          <v-text-field
+            label="Y-Max"
+            v-model.number="settings[settingField][3]"
+            type="number"
+            class="mr-2"
+          />
+          <v-menu bottom max-height="400" min-width="220">
+            <template v-slot:activator="{ on }">
+              <v-btn
+                v-on="on"
+                class="mt-2"
+                icon
+              >
+                <v-icon>menu</v-icon>
+              </v-btn>
+            </template>
+            <v-list dense>
+              <v-list-item @click="activateDraw(settingField)">
+                <v-list-item-content>Draw on map</v-list-item-content>
+                <v-list-item-icon>
+                  <v-icon>picture_in_picture</v-icon>
+                </v-list-item-icon>
+              </v-list-item>
+              <v-list-item
+                v-if="allLayersExtent"
+                @click="setExtent(settingField, allLayersExtent)"
+              >
+                <v-list-item-content>Extent of all layers</v-list-item-content>
+                <v-list-item-icon>
+                  <v-icon>zoom_out_map</v-icon>
+                </v-list-item-icon>
+              </v-list-item>
+              <v-list-item-group>
+                <v-layout row align-center @click.stop="">
+                  <v-divider/>
+                  <small class="mx-2 my-1 grey--text">Use layer extent</small>
+                  <v-divider/>
+                </v-layout>
+              </v-list-item-group>
+              <v-list-item
+                v-for="(layer, i) in extentLayers"
+                :key="i"
+                @click="setExtent(settingField, layer.extent)"
+                v-text="layer.name"
+              />
+            </v-list>
+          </v-menu>
+        </v-layout>
+      </div>
+      <v-checkbox
+        label="Custom default view extent"
+        color="primary"
+        :input-value="!!settings.zoom_extent"
+        @change="toggleZoomExtent"
+      />
+      <div class="map-layout">
         <scales-list
           label="Scales"
           :value="settings.scales"
           @input="updateScales"
           @click:scale="zoomToScale"
-          class="scales-list mt-1 shrink mr-2"
+          class="scales-list mt-1 shrink"
           :rules="validators.scales"
         />
         <v-layout class="map-preview column">
@@ -100,10 +113,10 @@
             :config="config"
             :settings="settings"
           >
-            <draw-extent v-if="drawToolActive" @draw="onExtentDraw"/>
+            <draw-extent v-if="drawExtentField" @draw="onExtentDraw"/>
           </map-preview>
         </v-layout>
-      </v-layout>
+      </div>
       <v-layout justify-space-between>
         <v-checkbox
           label="Map cache"
@@ -152,7 +165,7 @@ export default {
   },
   data () {
     return {
-      drawToolActive: false
+      drawExtentField: null,
     }
   },
   computed: {
@@ -169,6 +182,19 @@ export default {
           value: 'owner'
         }
       ]
+    },
+    extentFields () {
+      const fields = [{
+        title: 'Map extent',
+        settingField: 'extent'
+      }]
+      if (this.settings.zoom_extent) {
+        fields.push({
+          title: 'Default view extent',
+          settingField: 'zoom_extent'
+        })
+      }
+      return fields
     },
     extentLayers () {
       return layersList(this.layers).filter(l => l.extent)
@@ -194,8 +220,14 @@ export default {
     // this.$refs.form.validate()
   },
   methods: {
-    setExtent (extent) {
-      this.settings.extent = roundExtent(extent)
+    toggleZoomExtent (val) {
+      this.$set(this.settings, 'zoom_extent', val ? [...this.settings.extent] : null)
+    },
+    activateDraw (field) {
+      this.drawExtentField = field
+    },
+    setExtent (field, extent) {
+      this.settings[field] = roundExtent(extent)
     },
     zoomToScale (scale) {
       const res = scalesToResolutions([scale], this.config.units)[0]
@@ -208,8 +240,8 @@ export default {
       this.settings.tile_resolutions = scalesToResolutions(scales, this.config.units)
     },
     onExtentDraw (extent) {
-      this.setExtent(extent)
-      this.drawToolActive = false
+      this.setExtent(this.drawExtentField, extent)
+      this.drawExtentField = null
     },
     deleteCache () {
       this.$http.delete(`/api/project/cache/${this.projectPath}`)
@@ -226,11 +258,35 @@ export default {
 label {
   opacity: 0.65;
 }
-.scales-list {
-  width: 200px;
+.map-layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  justify-content: end;
+  max-height: 700px;
+  overflow: hidden;
+
+  .scales-list {
+    width: 220px;
+  }
+  .map-preview {
+    max-height: 100%;
+    min-height: 640px;
+    margin-bottom: 22px;
+  }
 }
-.map-preview {
-  max-width: 900px;
-  margin-bottom: 22px;
+
+.extent-field {
+  .marker {
+    width: 4px;
+    margin: 4px 8px 4px 0;
+    height: 44px;
+    &.extent {
+      background-color: rgb(206, 55, 17);
+    }
+    &.zoom_extent {
+      background-color: rgb(48, 136, 70);
+    }
+  }
 }
 </style>

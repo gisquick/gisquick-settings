@@ -35,6 +35,18 @@ import 'ol/ol.css'
 
 import { layersList } from '@/utils'
 
+function createExtentFeature (extent, color) {
+  const f = new Feature({ geometry: extent && fromExtent(extent) })
+  const style = new Style({
+    stroke: new Stroke({
+      color,
+      width: 2
+    }),
+    fill: null
+  })
+  f.setStyle(style)
+  return f
+}
 
 export default {
   props: {
@@ -51,6 +63,9 @@ export default {
   computed: {
     extent () {
       return this.settings.extent
+    },
+    zoomExtent () {
+      return this.settings.zoom_extent
     }
   },
   mounted () {
@@ -74,8 +89,10 @@ export default {
       this.createMap()
     },
     extent (extent) {
-      const f = this.extentSource.getFeatures()[0]
-      f.setGeometry(fromExtent(extent))
+      this.projectExtentFeature.setGeometry(fromExtent(extent))
+    },
+    zoomExtent (extent) {
+      this.zoomExtentFeature.setGeometry(extent && fromExtent(extent))
     }
   },
   methods: {
@@ -118,18 +135,14 @@ export default {
         this.error = true
         this.loading = false
       })
+      this.projectExtentFeature = createExtentFeature(settings.extent, [206, 55, 17, 0.9])
+      this.zoomExtentFeature = createExtentFeature(settings.zoom_extent, [48, 136, 70, 0.9])
       this.extentSource = new VectorSource({
-        features: [new Feature({ geometry: fromExtent(settings.extent) })]
+        features: [this.projectExtentFeature, this.zoomExtentFeature]
       })
       const extentLayer = new VectorLayer({
         source: this.extentSource,
-        style: new Style({
-          stroke: new Stroke({
-            color: [3, 169, 244, 0.8],
-            width: 2
-          }),
-          fill: null
-        })
+
       })
       const zoomInteraction = new MouseWheelZoom({
         condition: evt => evt.type === 'wheel' && evt.originalEvent.ctrlKey
