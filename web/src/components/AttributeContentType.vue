@@ -33,6 +33,9 @@ export default {
         }, {
           text: 'Media image file',
           value: 'media;image/*'
+        }, {
+          text: 'Image file',
+          value: 'image/*'
         }
       ]
     }
