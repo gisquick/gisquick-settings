@@ -21,6 +21,13 @@
           :ripple="false"
         />
       </template>
+      <template v-slot:item.export="{ item }">
+        <v-simple-checkbox
+          color="secondary"
+          v-model="lookupExport[item.name]"
+          :ripple="false"
+        />
+      </template>
       <template v-slot:item.content_type="{ item }">
         <attribute-content-type
           class="my-1 pt-0 mx-auto"
@@ -62,7 +69,8 @@ export default {
   data () {
     return {
       lookupAttr: {},
-      lookupInfo: {}
+      lookupInfo: {},
+      lookupExport: {}
     }
   },
   computed: {
@@ -98,6 +106,11 @@ export default {
           value: 'info_panel',
           sortable: false,
           align: 'center'
+        }, {
+          text: 'Export',
+          value: 'export',
+          sortable: false,
+          align: 'center'
         }
       ]
     }
@@ -108,6 +121,7 @@ export default {
       handler (ls) {
         this.lookupAttr = lookupTable(ls.attr_table_fields || this.layer.attributes.map(a => a.name))
         this.lookupInfo = lookupTable(ls.info_panel_fields || this.layer.attributes.map(a => a.name))
+        this.lookupExport = lookupTable(ls.export_fields || [])
       }
     },
     lookupAttr: {
@@ -120,6 +134,12 @@ export default {
       deep: true,
       handler (lookup) {
         this.$set(this.layerSettings, 'info_panel_fields', Object.keys(lookup).filter(k => lookup[k]))
+      }
+    },
+    lookupExport: {
+      deep: true,
+      handler (lookup) {
+        this.$set(this.layerSettings, 'export_fields', Object.keys(lookup).filter(k => lookup[k]))
       }
     }
   },
