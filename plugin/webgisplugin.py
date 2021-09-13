@@ -11,12 +11,12 @@ import sys
 import urllib
 import platform
 import configparser
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urljoin
 
 # Import the PyQt and QGIS libraries
 import PyQt5.uic
 from qgis.core import Qgis, QgsMapLayer, QgsProject, QgsLayerTreeLayer, QgsLayoutItemLabel, QgsWkbTypes
-from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QPushButton
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
 
@@ -385,6 +385,7 @@ class WebGisPlugin(object):
                 else:
                     extent = None
                 info = {
+                    "id": layer.id(),
                     "name": layer.name(),
                     "serverName": layer.shortName() if hasattr(layer, "shortName") else layer.name(),
                     "wfs": layer.id() in wfs_layers,
@@ -400,6 +401,9 @@ class WebGisPlugin(object):
                         "keyword_list": layer.keywordList()
                     }
                 }
+                legend_url = layer.legendUrl()
+                if legend_url:
+                    info["legend_url"] = legend_url
                 # if layer.isSpatial()
                 if layer_type == "vector":
                     info["geom_type"] = ('POINT', 'LINE', 'POLYGON', None, None)[layer.geometryType()]
@@ -488,8 +492,11 @@ class WebGisPlugin(object):
         project_crs = project.crs()
         map_canvas = self.iface.mapCanvas()
 
-        scales, _ = project.readListEntry("Scales", "/ScalesList")
-        scales = [int(s.split(":")[1]) for s in scales]
+        # scales, _ = project.readListEntry("Scales", "/ScalesList")
+        # scales = [int(s.split(":")[1]) for s in scales]
+
+        view_settings = project.viewSettings()
+        scales = view_settings.mapScales()
 
         projections = {}
         crs_list = [project_crs] + [l.crs() for l in project.mapLayers().values()]
@@ -517,6 +524,7 @@ class WebGisPlugin(object):
                 "decimal_places": project.readNumEntry("PositionPrecision", "/DecimalPlaces")[0]
             },
             "extent": map_canvas.fullExtent().toRectF().getCoords(),
+            # "default_view_extent": view_settings.defaultViewExtent(),
             "server": {
                 "wms_add_geometry": project.readBoolEntry ("WMSAddWktGeometry", "")[0]
             },
@@ -580,9 +588,25 @@ class WebGisPlugin(object):
             else:
                 raise ValueError("Unknown message type: %s" % msg_type)
 
+        def on_connection_estabilished():
+            # self.iface.messageBar().pushMessage("Gisquick", "plugin is connected to server: %s" % server_url, level=Qgis.Success)
+
+            def open_browser():
+                import webbrowser
+                webbrowser.open(urljoin(server_url, '/user/'))
+
+            widget = self.iface.messageBar().createMessage("Gisquick", "successfully connected to server: %s" % server_url)
+            button = QPushButton(widget)
+            button.setText("Open Browser")
+            button.pressed.connect(open_browser)
+            widget.layout().addWidget(button)
+            self.iface.messageBar().pushWidget(widget, Qgis.Success)
+            self.active_notification_widget = widget
+
 
         project = QgsProject.instance()
         if active:
+            self.active_notification_widget = None
             settings = self.get_settings()
             server_url = settings.value("server_url")
             username = settings.value("username")
@@ -598,10 +622,13 @@ class WebGisPlugin(object):
 
             class WebsocketServer(QThread):
                 finished = QtCore.pyqtSignal(int)
+                success = QtCore.pyqtSignal()
 
                 def run(self):
                     # print("Starting WS", "server:", server_url, "user:", username)
-                    res = gisquick_ws.start(server_url, username, password, client_info, callback)
+                    def on_success():
+                        self.success.emit()
+                    res = gisquick_ws.start(server_url, username, password, client_info, callback, on_success)
                     self.finished.emit(res)
 
             def on_finished(res):
@@ -610,9 +637,16 @@ class WebGisPlugin(object):
                     self.action.setChecked(False)
                 if res != 0:
                     QMessageBox.warning(None, 'Warning', 'Failed to connect!')
+                else:
+                    if self.iface.messageBar().currentItem() == self.active_notification_widget:
+                        self.iface.messageBar().popWidget(self.active_notification_widget)
+                    self.active_notification_widget = None
+
+
             self.ws = WebsocketServer()
             self.ws.finished.connect(on_finished)
-            self.ws.start()
+            self.ws.success.connect(on_connection_estabilished)
+            r = self.ws.start()
 
             # project.isDirtyChanged.connect(self.on_project_change)
             project.readProject.connect(self.on_project_change)

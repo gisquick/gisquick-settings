@@ -22,7 +22,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Client export
+// Gisquick plugin client
 type Client struct {
 	Server            string
 	User              string
@@ -50,7 +50,7 @@ type genericMessage struct {
 	Data   interface{} `json:"data"`
 }
 
-// NewClient export
+// Creates a new Gisquick plugin client
 func NewClient(url, user, password string) *Client {
 	c := Client{}
 	c.Server = url
@@ -277,8 +277,8 @@ func (c *Client) logout() error {
 	return nil
 }
 
-// Start export
-func (c *Client) Start() error {
+// Starts a websocket connection with server and handles incomming messages
+func (c *Client) Start(OnConnectionEstabilished func()) error {
 	err := c.login()
 	if err != nil {
 		return err
@@ -306,6 +306,10 @@ func (c *Client) Start() error {
 	if err != nil {
 		return err
 	}
+	if OnConnectionEstabilished != nil {
+		OnConnectionEstabilished()
+	}
+
 	c.WsConn = wsConn
 	defer wsConn.Close()
 
@@ -313,6 +317,8 @@ func (c *Client) Start() error {
 
 	go func() {
 		defer close(done)
+
+		// c.OnMessageCallback([]byte("{ \"type\": \"connection:success\"}"))
 
 		for {
 			_, rawMessage, err := wsConn.ReadMessage()
@@ -367,7 +373,7 @@ func (c *Client) Start() error {
 	}
 }
 
-// Stop export
+// Closes websocket connection
 func (c *Client) Stop() {
 	c.interrupt <- 1
 }

@@ -59,7 +59,7 @@ class GisquickWs():
             del self._lib
         """
 
-    def start(self, url, username, password, client_info, callback):
+    def start(self, url, username, password, client_info, callback, success_callback):
         self._load_lib()
 
         @ctypes.CFUNCTYPE(ctypes.c_char_p, ctypes.c_char_p)
@@ -84,13 +84,18 @@ class GisquickWs():
 
             return json.dumps(resp).encode("utf-8")
 
+        @ctypes.CFUNCTYPE(ctypes.c_void_p)
+        def success_callback_wrapper():
+            success_callback()
+
         try:
             return self._lib.Start(
                 go_string(url),
                 go_string(username),
                 go_string(password),
                 go_string(client_info),
-                callback_wrapper
+                callback_wrapper,
+                success_callback_wrapper
             )
         finally:
             self._unload_lib()

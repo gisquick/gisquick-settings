@@ -5,8 +5,15 @@ package main
 
 typedef char* (*message_callback) (char *msg);
 
+typedef void (*success_callback) ();
+
+
 static inline char* call_message_callback(message_callback ptr, char *msg) {
   return (ptr)(msg);
+}
+
+static inline void call_success_callback(success_callback ptr) {
+  (ptr)();
 }
 */
 import "C"
@@ -22,7 +29,7 @@ import (
 var c *client.Client
 
 //export Start
-func Start(url, user, password, clientInfo string, fn C.message_callback) int {
+func Start(url, user, password, clientInfo string, fn C.message_callback, success C.success_callback) int {
 	c = client.NewClient(url, user, password)
 	c.ClientInfo = clientInfo
 	c.OnMessageCallback = func(message []byte) string {
@@ -34,7 +41,10 @@ func Start(url, user, password, clientInfo string, fn C.message_callback) int {
 		}
 		return C.GoString(resp)
 	}
-	if err := c.Start(); err != nil {
+	onConnectionEstabilished := func() {
+		C.call_success_callback(success)
+	}
+	if err := c.Start(onConnectionEstabilished); err != nil {
 		log.Println(err.Error())
 		c = nil
 		runtime.GC()

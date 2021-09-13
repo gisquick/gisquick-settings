@@ -209,6 +209,9 @@ export default {
         }, {
           text: 'Selected users',
           value: 'users'
+        }, {
+          text: 'Other',
+          value: 'other'
         }
       ]
     },
