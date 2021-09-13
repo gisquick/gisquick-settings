@@ -385,6 +385,7 @@ class WebGisPlugin(object):
                 else:
                     extent = None
                 info = {
+                    "id": layer.id(),
                     "name": layer.name(),
                     "serverName": layer.shortName() if hasattr(layer, "shortName") else layer.name(),
                     "wfs": layer.id() in wfs_layers,
@@ -400,6 +401,9 @@ class WebGisPlugin(object):
                         "keyword_list": layer.keywordList()
                     }
                 }
+                legend_url = layer.legendUrl()
+                if legend_url:
+                    info["legend_url"] = legend_url
                 # if layer.isSpatial()
                 if layer_type == "vector":
                     info["geom_type"] = ('POINT', 'LINE', 'POLYGON', None, None)[layer.geometryType()]
@@ -488,8 +492,11 @@ class WebGisPlugin(object):
         project_crs = project.crs()
         map_canvas = self.iface.mapCanvas()
 
-        scales, _ = project.readListEntry("Scales", "/ScalesList")
-        scales = [int(s.split(":")[1]) for s in scales]
+        # scales, _ = project.readListEntry("Scales", "/ScalesList")
+        # scales = [int(s.split(":")[1]) for s in scales]
+
+        view_settings = project.viewSettings()
+        scales = view_settings.mapScales()
 
         projections = {}
         crs_list = [project_crs] + [l.crs() for l in project.mapLayers().values()]
@@ -517,6 +524,7 @@ class WebGisPlugin(object):
                 "decimal_places": project.readNumEntry("PositionPrecision", "/DecimalPlaces")[0]
             },
             "extent": map_canvas.fullExtent().toRectF().getCoords(),
+            # "default_view_extent": view_settings.defaultViewExtent(),
             "server": {
                 "wms_add_geometry": project.readBoolEntry ("WMSAddWktGeometry", "")[0]
             },
