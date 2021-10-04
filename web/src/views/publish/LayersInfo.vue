@@ -20,6 +20,44 @@
         <span>{{ item.name }}</span>
       </v-layout>
     </template>
+    <template v-slot:header.queryable="{ text }">
+      <th class="header">
+        <span v-text="text"/>
+        <v-menu v-if="wfsNotEnabled" :close-on-content-click="false">
+          <template v-slot:activator="{ on: menu, attrs }">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on: tooltip }">
+                <v-btn
+                  icon small
+                  color="orange"
+                  class="ml-1"
+                  v-bind="attrs"
+                  v-on="{ ...tooltip, ...menu }"
+                >
+                  <v-icon size="22">warning</v-icon>
+                </v-btn>
+              </template>
+              <span>WFS is disabled for all vector layers</span>
+            </v-tooltip>
+          </template>
+          <div class="wfs-menu">
+            <div class="mx-3 my-1">
+              <v-icon size="20">info_outline</v-icon>
+              <span>
+                WFS service is required for vector layers. You can configure <strong>WFS Capabilities</strong>
+                settings in your QGIS project (Project -> Properties -> QGIS Server)
+              </span>
+            </div>
+            <v-divider/>
+            <span class="mx-3 my-1">
+              If you would like to enable WFS for all vector layers through the plugin, click on the following button.
+              This operation will modify and save your local QGIS project!
+            </span>
+            <v-btn color="primary" @click="enableWFS">Enable WFS</v-btn>
+          </div>
+        </v-menu>
+      </th>
+    </template>
     <!-- <template v-slot:leaf.publish="{ item }">
       <v-checkbox
         v-model="item.publish"
@@ -29,8 +67,8 @@
         hide-details
       />
     </template> -->
-    <template v-slot:leaf.wfs="{ item }">
-      <v-icon v-if="item.wfs">check</v-icon>
+    <template v-slot:leaf.queryable="{ item }">
+      <v-icon v-if="item.queryable">check</v-icon>
       <v-icon v-else>remove</v-icon>
     </template>
     <template v-slot:leaf.source="{ item }">
@@ -58,7 +96,7 @@ import { layersList, layersGroups } from '@/utils'
 import path from 'path'
 
 export default {
-  name: 'Layers',
+  name: 'LayersInfo',
   components: { LayersTable },
   props: {
     config: Object
@@ -79,8 +117,8 @@ export default {
         //   value: 'publish',
         // },
         {
-          text: 'WFS',
-          value: 'wfs'
+          text: 'Queryable',
+          value: 'queryable'
         },
         {
           text: 'CRS',
@@ -114,11 +152,14 @@ export default {
         https: 'public'
       }
     },
+    layersList () {
+      return layersList(this.layers)
+    },
     sourceInfo () {
       const sources = {}
       const projectDir = this.config.directory + path.sep
       const clientWinPlatform = /windows/i.test(this.$ws.clientInfo)
-      layersList(this.layers).forEach(l => {
+      this.layersList.forEach(l => {
         let text = l.source
         const schema = l.source.split('://')[0]
         const info = { icon: this.sourceIcons[schema] }
@@ -138,6 +179,9 @@ export default {
       })
       return sources
     },
+    wfsNotEnabled () {
+      return this.layersList.some(l => l.type === 'vector') && !this.layersList.some(l => l.wfs)
+    },
     status () {
       const error = Object.values(this.sourceInfo).some(s => s.error)
       return error ? 'error' : 'ok'
@@ -155,6 +199,11 @@ export default {
       handler (status) {
         this.$emit('status', status)
       }
+    }
+  },
+  methods: {
+    enableWFS () {
+      this.$ws.request('EnableLayersWFS')
     }
   }
 }
@@ -184,5 +233,12 @@ export default {
     white-space: nowrap;
     overflow: hidden;
   }
+}
+.wfs-menu {
+  display: flex;
+  flex-direction: column;
+  max-width: 300px;
+  background-color: #f3f3f3;
+  font-size: 15px;
 }
 </style>

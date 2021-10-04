@@ -150,8 +150,12 @@ export default {
       return [groupNode, ...children]
     },
     expandAll () {
-      const groups = layersGroups(this.items)
-      this.$emit('update:opened', groups.map(g => g.name))
+      if (this.opened.length) {
+        this.$emit('update:opened', [])
+      } else {
+        const groups = layersGroups(this.items)
+        this.$emit('update:opened', groups.map(g => g.name))
+      }
     },
     renderLayersHeader (h) {
       const slot = this.$scopedSlots['header.layer']
@@ -175,6 +179,13 @@ export default {
           </v-layout>
         </th>
       )
+    },
+    renderHeaderColumn (h, column) {
+      const slot = this.$scopedSlots[`header.${column.value}`]
+      if (slot) {
+        return slot(column)
+      }
+      return <th class={`header text-${column.align || 'center'}`} width="1">{column.text}</th>
     }
   },
   render (h) {
@@ -182,7 +193,8 @@ export default {
     const children = items.map(item => item.layers ? this.renderGroup(h, item, 0) : this.renderLeaf(h, item, 0))
     const headers = [
       this.renderLayersHeader(h),
-      ...this.headers.map(header => <th class={`header text-${header.align || 'center'}`} width="1">{header.text}</th>)
+      ...this.headers.map(col => this.renderHeaderColumn(h, col))
+      // ...this.headers.map(header => <th class={`header text-${header.align || 'center'}`} width="1">{header.text}</th>)
     ]
     return (
       <div class="table-container">
