@@ -28,7 +28,7 @@
       disabled
     />
     <v-layout v-else align-center pl-4 my-1 shrink>
-      <v-icon color="orange">warning</v-icon>
+      <v-icon color="orange" size="20">warning</v-icon>
       <span class="orange--text mx-2">Map scales are not defined</span>
       <small class="grey--text">(Project > Properties > General > Project Predefined Scales)</small>
     </v-layout>
@@ -44,14 +44,11 @@
         {{ template.name }}
       </v-list-item>
     </v-list>
-    <span v-else class="orange--text pl-4 my-1">None</span>
-    <h4>Server options</h4>
-    <v-checkbox
-      label="Add geometry in feature response"
-      class="mx-4"
-      :input-value="config.server.wms_add_geometry"
-      disabled
-    />
+    <v-layout v-else shrink pl-4 my-2>
+      <v-icon color="orange" size="20" class="mr-2">warning</v-icon>
+      <span class="orange--text">Project does not have defined any print layouts. Print tool will be not available.</span>
+    </v-layout>
+    <!-- <span v-else class="orange--text pl-4 my-2">Project does not have defined any print layouts. Print tool will be not available.</span> -->
   </v-layout>
 </template>
 

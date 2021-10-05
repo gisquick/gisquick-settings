@@ -56,6 +56,7 @@
       </template>
       <template v-slot:leaf.attributes="{ item }">
         <router-link
+          v-if="item.queryable"
           class="layout row justify-center"
           :to="`layers/${item.name}/attributes`"
         >

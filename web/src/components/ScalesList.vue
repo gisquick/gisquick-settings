@@ -9,10 +9,9 @@
     }"
   >
     <small slot="label">Scales</small>
-    <v-layout class="column grow box">
+    <v-layout class="column box">
       <v-list
         dense
-        class="grow"
         @click.native="focus = true"
       >
         <v-list-item
@@ -173,6 +172,12 @@ export default {
 .box {
   border: 1px solid;
   width: 100%;
+}
+.v-list {
+  flex: 1 1 0;
+  // flex-shrink: 1;
+  // max-height: 60%;
+  overflow: auto;
 }
 .v-list-item {
   input.edit-field {
