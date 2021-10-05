@@ -50,14 +50,37 @@
 import isEqual from 'lodash/isEqual'
 import keyBy from 'lodash/keyBy'
 import mapValues from 'lodash/mapValues'
+import round from 'lodash/round'
 import Page from '@/mixins/Page'
 import ProjectMenu from '@/components/ProjectMenu'
 import Timeline from '@/components/Timeline'
 import ScriptsStore from '@/components/ScriptsStore'
-import { layersList, filterLayers, scalesToResolutions } from '@/utils'
+import { layersList, filterLayers, scaleToResolution, scalesToResolutions } from '@/utils'
 
 function clone (data) {
   return JSON.parse(JSON.stringify(data))
+}
+
+function generateLinearScale (maxValue, count) {
+  return new Array(count).fill(0).map((_, i) => maxValue / Math.pow(2, i))
+}
+
+function dynamicDecimalPrecision (val, digits) {
+  const intDigits = parseInt(val).toString().length
+  const precision = Math.max(0, digits - intDigits)
+  return round(val, precision)
+}
+
+const ProjectionsScales = {
+  // Source: https://www.maptiler.com/google-maps-coordinates-tile-bounds-projection/
+  'EPSG:3857': {
+    scales: generateLinearScale(591658710.90, 24).map(v => round(v, 2)),
+    tile_resolutions: generateLinearScale(156543.0339, 24).map(v => dynamicDecimalPrecision(v, 10))
+  },
+  'EPSG:5514': {
+    scales: generateLinearScale(7315200.0000000019, 20).map(v => round(v, 2)),
+    tile_resolutions: generateLinearScale(scaleToResolution(7315200.0000000019, 'meters'), 20).map(v => dynamicDecimalPrecision(v, 10))
+  }
 }
 
 export default {
@@ -143,11 +166,9 @@ export default {
         hidden: false,
         attributes: {}
       }))
-      return {
+      const settings = {
         layers,
         extent: meta.extent,
-        scales: meta.scales,
-        tile_resolutions: scalesToResolutions(meta.scales, meta.units),
         title: meta.title,
         overlays: meta.layers.map(l => l.id || l.name),
         base_layers: [],
@@ -155,6 +176,18 @@ export default {
         use_mapcache: false,
         topics: []
       }
+      if (meta.scales.length) {
+        Object.assign(settings, {
+          scales: meta.scales,
+          tile_resolutions: scalesToResolutions(meta.scales, meta.units)
+        })
+      } else {
+        const projInfo = ProjectionsScales[meta.projection.code]
+        if (projInfo) {
+          Object.assign(settings, projInfo)
+        }
+      }
+      return settings
     },
     async fetchGisquickSettings () {
       const { data } = await this.$http

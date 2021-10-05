@@ -9,15 +9,19 @@ export function searchRegex (text) {
   return new RegExp(escapeRegExp(removeAccents(text)), 'i')
 }
 
+const factor = {
+  feet: 12.0,
+  meters: 39.37,
+  miles: 63360.0,
+  degrees: 4374754.0
+}
 /* Converts array of map scales to tile resolutions. */
 export function scalesToResolutions(scales, units, dpi = 96) {
-  const factor = {
-    feet: 12.0,
-    meters: 39.37,
-    miles: 63360.0,
-    degrees: 4374754.0
-  }
   return scales.map(scale => parseInt(scale) / (dpi * factor[units]))
+}
+
+export function scaleToResolution(scale, units, dpi = 96) {
+  return parseInt(scale) / (dpi * factor[units])
 }
 
 export function layersList (items) {
