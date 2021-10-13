@@ -52,21 +52,26 @@
         <label>
           <small>Layers</small>
         </label>
-        <v-treeview
+        <layers-table
           v-if="activeTopic"
-          :items="layers"
-          item-key="name"
-          item-children="layers"
-          item-disabled="hidden"
-          selectable
-          v-model="activeTopic.visible_overlays"
-          selected-color="grey darken-3"
-          dense
+          label="Layer"
+          :items="availableLayers"
+          :headers="[]"
+          :opened.sync="opened"
         >
-          <template v-slot:label="{ item }">
-            <span>{{ item.title || item.name }}</span>
+          <template v-slot:leaf="{ item }">
+            <!-- :disabled="settings.layers[item.id].hidden" -->
+            <v-checkbox
+              color="secondary"
+              class="my-0 py-1"
+              :label="item.name"
+              :ripple="false"
+              :input-value="topicLayersLookup[item.id]"
+              @change="toggleLayer(item)"
+              hide-details
+            />
           </template>
-        </v-treeview>
+        </layers-table>
       </v-layout>
       <label v-else>No topic is selected</label>
     </v-layout>
@@ -74,20 +79,32 @@
 </template>
 
 <script>
+import LayersTable from '@/components/LayersTable.vue'
+import { filterLayers, lookupTable } from '@/utils'
+
 export default {
   name: 'TopicsEditor',
+  components: { LayersTable },
   props: {
     topics: Array,
-    layers: Array
+    layers: Array,
+    settings: Object
   },
   data () {
     return {
-      selectedIndex: 0
+      selectedIndex: 0,
+      opened: []
     }
   },
   computed: {
+    availableLayers () {
+      return filterLayers(this.layers, l => !this.settings.layers[l.id].hidden)
+    },
     activeTopic () {
       return this.topics[this.selectedIndex]
+    },
+    topicLayersLookup () {
+      return lookupTable(this.activeTopic.visible_overlays)
     }
   },
   methods: {
@@ -101,6 +118,13 @@ export default {
     removeSelectedTopic () {
       // if (this.selectedIndex >= 0) {
       this.topics.splice(this.selectedIndex, 1)
+    },
+    toggleLayer (layer) {
+      if (this.topicLayersLookup[layer.id]) {
+        this.activeTopic.visible_overlays = this.activeTopic.visible_overlays.filter(id => id != layer.id)
+      } else {
+        this.activeTopic.visible_overlays.push(layer.id)
+      }
     }
   }
 }
@@ -142,5 +166,15 @@ export default {
 }
 .v-list {
   min-width: 240px;
+}
+.layers-table {
+  .v-input--checkbox {
+    ::v-deep {
+      label {
+        margin-left: 4px;
+        color: #111;
+      }
+    }
+  }
 }
 </style>

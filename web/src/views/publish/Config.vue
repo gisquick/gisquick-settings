@@ -61,7 +61,8 @@ export default {
           component: TopicsEditor,
           props: {
             topics: settings.topics,
-            layers: overlays
+            layers: overlays,
+            settings
           }
         }, {
           path: 'layers/permissions',

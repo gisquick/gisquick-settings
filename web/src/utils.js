@@ -67,3 +67,10 @@ export function layersGroups (items) {
 export function mapLayers (items, fn) {
   return items.map(i => i.layers ? { ...i, layers: mapLayers(i.layers, fn) } : fn(i))
 }
+
+export function lookupTable (items) {
+  // return items.reduce((lookup, v) => ({...lookup, [v]: true }), {})
+  return items.reduce((lookup, v) => {
+    return lookup[v] = true, lookup
+  }, {})
+}

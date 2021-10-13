@@ -21,7 +21,7 @@
       </v-layout>
     </template>
     <template v-slot:header.queryable="{ text }">
-      <th class="header">
+      <th class="header text-left">
         <span v-text="text"/>
         <v-menu v-if="wfsNotEnabled" :close-on-content-click="false">
           <template v-slot:activator="{ on: menu, attrs }">

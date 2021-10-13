@@ -51,13 +51,7 @@
 import AttributeContentType from '@/components/AttributeContentType.vue'
 import ComponentsSelect from '@/components/ComponentsSelect.vue'
 import { createMap, setNestedProperty, deleteNestedProperty } from '@/helpers'
-
-function lookupTable (items) {
-  // return items.reduce((lookup, v) => ({...lookup, [v]: true }), {})
-  return items.reduce((lookup, v) => {
-    return lookup[v] = true, lookup
-  }, {})
-}
+import { lookupTable } from '@/utils'
 
 export default {
   name: 'LayerAttributes',
