@@ -145,6 +145,20 @@ export default {
             hidden: false,
             attributes: {}
           }))
+          // Update base_layers & overlays lists (cleanup and set all new items as overlays)
+          const topLevelIds = new Set(this.projectConfig.layers.map(n => n.id || n.name))
+          if (this.settings.base_layers.some(id => !topLevelIds.has(id))) {
+            this.settings.base_layers = this.settings.base_layers.filter(id => topLevelIds.has(id))
+          }
+          if (this.settings.overlays.some(id => !topLevelIds.has(id))) {
+            this.settings.overlays = this.settings.overlays.filter(id => topLevelIds.has(id))
+          }
+          const currentIds = new Set([...this.settings.base_layers, this.settings.overlays])
+          topLevelIds.forEach(id => {
+            if (!currentIds.has(id)) {
+              this.settings.overlays.push(id)
+            }
+          })
         } catch (err) {
           console.error(err)
           this.$notification.error('Failed to load project data')
