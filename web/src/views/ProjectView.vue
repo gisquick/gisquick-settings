@@ -201,6 +201,10 @@ export default {
           Object.assign(settings, projInfo)
         }
       }
+      if (!settings.scales) {
+        settings.scales = []
+        settings.tile_resolutions = []
+      }
       return settings
     },
     async fetchGisquickSettings () {
